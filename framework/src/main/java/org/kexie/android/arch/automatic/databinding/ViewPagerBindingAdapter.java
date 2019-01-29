@@ -3,7 +3,6 @@ package org.kexie.android.arch.automatic.databinding;
 import android.databinding.BindingAdapter;
 import android.support.annotation.LayoutRes;
 import android.support.v4.view.ViewPager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 
 import java.util.Arrays;
@@ -24,7 +23,7 @@ public final class ViewPagerBindingAdapter
                 = (GenericPagerAdapter) view.getAdapter();
         if (adapter == null)
         {
-            Log.e(RecyclerView.class.getSimpleName(),
+            Log.e(ViewPager.class.getSimpleName(),
                     "no has adapter to bind "
                             + Arrays.toString(data.toArray()));
             return;
