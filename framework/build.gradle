@@ -31,12 +31,10 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    api 'com.android.support:multidex:+'
-    api 'com.android.support:appcompat-v7:+'
-    api 'com.android.support:support-v13:+'
-    api 'android.arch.lifecycle:extensions:+'
-    api 'com.android.support:design:+'
-
+    implementation 'com.android.support:appcompat-v7:+'
+    implementation 'com.android.support:design:+'
+    implementation 'android.arch.lifecycle:extensions:+'
+    implementation 'com.github.CymChad:BaseRecyclerViewAdapterHelper:+'
     implementation 'org.dom4j:dom4j:+'
 
     testImplementation 'junit:junit:4.12'
