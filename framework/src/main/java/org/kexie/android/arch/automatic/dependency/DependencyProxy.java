@@ -7,14 +7,14 @@ import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.Objects;
 
-public final class DependencyHolder
+public final class DependencyProxy
         extends Dependency
 {
     private WeakReference<Object> owner;
     private Dependency internal;
     private Map<String, Object> singletons = new ArrayMap<>();
 
-    public DependencyHolder(@NonNull Object owner, @NonNull Dependency internal)
+    public DependencyProxy(@NonNull Object owner, @NonNull Dependency internal)
     {
         if (!internal.getOwnerType().equals(owner.getClass()))
         {
@@ -37,7 +37,7 @@ public final class DependencyHolder
     private <T> T getOwner()
     {
         return (T) Objects.requireNonNull(owner.get(),
-                "context is release");
+                "owner is release");
     }
 
     @NonNull
@@ -46,12 +46,6 @@ public final class DependencyHolder
     protected <T> T onGet(String name, Dependency dependency)
     {
         selfCheck();
-        if (!equals(dependency))
-        {
-            throw new IllegalStateException(
-                    "must from this getDependency"
-            );
-        }
         if (OWNER.equals(name))
         {
             return getOwner();

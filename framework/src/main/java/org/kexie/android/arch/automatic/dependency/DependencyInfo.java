@@ -8,14 +8,14 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
-public final class DependencyDescribe
+public final class DependencyInfo
         extends Dependency
 {
     private final Class<?> ownerType;
     private final Map<String, DependencyProvider> providers;
 
-    private DependencyDescribe(@NonNull Class<?> ownerType,
-                               @Nullable Map<String, DependencyProvider> providers)
+    private DependencyInfo(@NonNull Class<?> ownerType,
+                           @Nullable Map<String, DependencyProvider> providers)
     {
         this.ownerType = ownerType;
         if (providers == null)
@@ -42,12 +42,12 @@ public final class DependencyDescribe
         if (equals(dependency))
         {
             throw new IllegalStateException(
-                    "invoke getDependency() method require form a DependencyManager"
+                    "invoke get(String) method require form a proxy instance"
             );
         }
         return Objects.requireNonNull(getProvider(name)
                         .<T>newInstance(dependency),
-                "can not provide a null department");
+                "can not provide null");
     }
 
     @NonNull

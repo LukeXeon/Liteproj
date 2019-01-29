@@ -9,10 +9,10 @@ import org.dom4j.io.SAXReader;
 public final class DependencyAnalyzer
 {
     private final static SAXReader SAX_READER = new SAXReader();
-    //缓存describe
+    //缓存info
     private final static LruCache<Integer, Dependency> CACHE = new LruCache<>(32);
 
-    //返回已经attach的Dependency
+    //返回Proxy
     @Nullable
     @SuppressWarnings("WeakerAccess")
     public static Dependency analysis(Object owner, Context context)
