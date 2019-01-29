@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          package="org.kexie.android.arch">
+    <application>
+        <provider
+            android:authorities="${applicationId}.automatic-initializer"
+            android:name=".automatic.internal.AutomaticInitializer"
+            android:exported="false"
+            android:multiprocess="true"/>
+    </application>
+</manifest>
