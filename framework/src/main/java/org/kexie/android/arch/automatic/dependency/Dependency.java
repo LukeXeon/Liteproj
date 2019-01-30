@@ -2,17 +2,21 @@ package org.kexie.android.arch.automatic.dependency;
 
 import android.support.annotation.NonNull;
 
-public interface Dependency
+public abstract class Dependency
 {
+    @SuppressWarnings({"WeakerAccess"})
+    public static final String OWNER = "owner";
+
+    @NonNull
+    public abstract <T> T getOwner();
 
     @NonNull
     @SuppressWarnings({"WeakerAccess"})
-    <T> T get(String name);
+    public abstract <T> T get(String name);
 
     @NonNull
-    Class<?> getResultType(String name);
+    public abstract Class<?> getResultType(String name);
 
     @NonNull
-    DependencyType getDependencyType(String name);
-
+    public abstract DependencyType getDependencyType(String name);
 }

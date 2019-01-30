@@ -1,6 +1,7 @@
 package org.kexie.android.arch.automatic.dependency;
 
 import android.app.Application;
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.ArrayMap;
@@ -15,7 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 
 public final class DependencyImpl
-        implements Dependency
+        extends Dependency
 {
     private final Class<?> ownerType;
     private final WeakReference<Object> owner;
@@ -49,6 +50,7 @@ public final class DependencyImpl
         return new DependencyImpl(owner, relations);
     }
 
+    @SuppressWarnings({"unchecked"})
     private DependencyImpl(@NonNull Object owner,
                           @NonNull List<DependencyRelation> relations)
     {
@@ -56,115 +58,28 @@ public final class DependencyImpl
         this.owner = new WeakReference<>(owner);
         for (DependencyRelation relation : relations)
         {
-            final Class<?> requireType = relation.getOwnerType();
+            Class<?> requireType = relation.getOwnerType();
             if (requireType.isAssignableFrom(ownerType))
             {
                 dependencies.put(relation, this);
             } else if (AppCompatActivity.class.isAssignableFrom(ownerType)
                     || Application.class.isAssignableFrom(requireType))
             {
-                dependencies.put(relation, new Dependency()
-                {
-                    @NonNull
-                    @SuppressWarnings({"unchecked"})
-                    @Override
-                    public <Type> Type get(String name)
-                    {
-                        if (AnalyzerUtil.OWNER.equals(name))
-                        {
-                            AppCompatActivity activity
-                                    = DependencyImpl.this.get(AnalyzerUtil.OWNER);
-                            return (Type) activity.getApplicationContext();
-                        }
-                        return DependencyImpl.this.get(name);
-                    }
-
-                    @NonNull
-                    @Override
-                    public Class<?> getResultType(String name)
-                    {
-                        return requireType;
-                    }
-
-                    @NonNull
-                    @Override
-                    public DependencyType getDependencyType(String name)
-                    {
-                        return DependencyImpl.this.getDependencyType(name);
-                    }
-                });
+                dependencies.put(relation,
+                        new ACAppDependency(this,
+                                (Class<? extends Application>) requireType));
             } else if (Fragment.class.isAssignableFrom(ownerType)
                     || AppCompatActivity.class.isAssignableFrom(requireType))
             {
-                dependencies.put(relation, new Dependency()
-                {
-                    @NonNull
-                    @SuppressWarnings({"unchecked"})
-                    @Override
-                    public <Type> Type get(String name)
-                    {
-                        if (AnalyzerUtil.OWNER.equals(name))
-                        {
-                            Fragment fragment = DependencyImpl.this.get(AnalyzerUtil.OWNER);
-                            return (Type) Objects.requireNonNull(
-                                    AppCompatActivity.class.cast(
-                                            fragment.getActivity()
-                                    )
-                            );
-                        }
-                        return DependencyImpl.this.get(name);
-                    }
-
-                    @NonNull
-                    @Override
-                    public Class<?> getResultType(String name)
-                    {
-                        return requireType;
-                    }
-
-                    @NonNull
-                    @Override
-                    public DependencyType getDependencyType(String name)
-                    {
-                        return DependencyImpl.this.getDependencyType(name);
-                    }
-                });
+                dependencies.put(relation,
+                        new FCADependency(this,
+                                (Class<? extends AppCompatActivity>) requireType));
             } else if (Fragment.class.isAssignableFrom(ownerType)
                     || Application.class.isAssignableFrom(requireType))
             {
-                dependencies.put(relation, new Dependency()
-                {
-                    @NonNull
-                    @SuppressWarnings({"unchecked"})
-                    @Override
-                    public <Type> Type get(String name)
-                    {
-                        if (AnalyzerUtil.OWNER.equals(name))
-                        {
-                            Fragment fragment = DependencyImpl.this.get(AnalyzerUtil.OWNER);
-                            return (Type) Objects.requireNonNull(
-                                    AppCompatActivity.class.cast(
-                                            fragment.getActivity()
-                                    )
-                            ).getApplicationContext();
-                        }
-                        return DependencyImpl.this.get(name);
-                    }
-
-                    @NonNull
-                    @Override
-                    public Class<?> getResultType(String name)
-                    {
-                        return requireType;
-                    }
-
-                    @NonNull
-                    @Override
-                    public DependencyType getDependencyType(String name)
-                    {
-                        return DependencyImpl.this.getDependencyType(name);
-                    }
-                });
+                dependencies.put(relation,
+                        new FCAppDependency(this,
+                                (Class<? extends Application>) requireType));
             } else
             {
                 throw new AssertionError();
@@ -172,10 +87,11 @@ public final class DependencyImpl
         }
     }
 
+    @SuppressWarnings({"unchecked"})
     @NonNull
-    private Object getOwner()
+    public <T> T getOwner()
     {
-        return Objects.requireNonNull(owner.get(),
+        return (T)Objects.requireNonNull(owner.get(),
                 "owner has been released");
     }
 
@@ -184,9 +100,9 @@ public final class DependencyImpl
     @Override
     public <T> T get(String name)
     {
-        if (AnalyzerUtil.OWNER.equals(name))
+        if (OWNER.equals(name))
         {
-            return (T) getOwner();
+            return getOwner();
         }
         for (DependencyRelation relation : dependencies.keySet())
         {
@@ -214,7 +130,7 @@ public final class DependencyImpl
     @Override
     public Class<?> getResultType(String name)
     {
-        if (AnalyzerUtil.OWNER.equals(name))
+        if (OWNER.equals(name))
         {
             return ownerType;
         }
@@ -234,7 +150,7 @@ public final class DependencyImpl
     @Override
     public DependencyType getDependencyType(String name)
     {
-        if (AnalyzerUtil.OWNER.equals(name))
+        if (OWNER.equals(name))
         {
             return DependencyType.Singleton;
         }

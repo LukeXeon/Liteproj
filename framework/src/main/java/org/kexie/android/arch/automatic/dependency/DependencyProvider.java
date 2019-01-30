@@ -48,10 +48,10 @@ public final class DependencyProvider
 
     @Override
     @NonNull
-    @SuppressWarnings({"unchecked", "WeakerAccess"})
-    public <T> Class<T> getResultType()
+    @SuppressWarnings({"WeakerAccess"})
+    public Class<?> getResultType()
     {
-        return (Class<T>) factory.getResultType();
+        return factory.getResultType();
     }
 
 }

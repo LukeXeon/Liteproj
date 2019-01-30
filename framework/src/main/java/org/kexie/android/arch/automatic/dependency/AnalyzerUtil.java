@@ -10,28 +10,10 @@ import java.util.regex.Pattern;
 
 public final class AnalyzerUtil
 {
-
     private AnalyzerUtil()
     {
         throw new AssertionError();
     }
-
-    public static final String FIELD = "field";
-    public static final String PROVIDER = "provider";
-    public static final String PROPERTY = "property";
-    public static final String NEW = "new";
-    public static final String VAR = "var";
-    public static final String ARG = "arg";
-    public static final String REF = "ref";
-    public static final String CLASS = "class";
-    public static final String NAME = "name";
-    public static final String INCLUDE = "include";
-    public static final String SINGLETON = "singleton";
-    public static final String FACTORY = "factory";
-    public static final String SCOPE = "scope";
-    public static final String RAW_RES_HEADER = "@raw/";
-    public static final String LET = "let";
-    public static final String OWNER = "owner";
 
     private final static Pattern NAME_PATTERN;
 
@@ -58,6 +40,7 @@ public final class AnalyzerUtil
         }
         return null;
     }
+
 
     public static RuntimeException runtimeException(Element element, String message)
     {

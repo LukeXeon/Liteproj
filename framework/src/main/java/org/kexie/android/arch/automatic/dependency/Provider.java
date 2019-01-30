@@ -13,6 +13,6 @@ public interface Provider
     DependencyType getType();
 
     @NonNull
-    @SuppressWarnings({"unchecked", "WeakerAccess"})
-    <T> Class<T> getResultType();
+    @SuppressWarnings({"WeakerAccess"})
+    Class<?> getResultType();
 }
