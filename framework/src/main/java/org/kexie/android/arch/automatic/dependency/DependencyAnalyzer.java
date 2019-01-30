@@ -4,6 +4,7 @@ import android.content.Context;
 import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
 import android.support.v4.util.ArrayMap;
+import android.support.v4.util.ArraySet;
 import android.support.v4.util.LruCache;
 
 import org.dom4j.Document;
@@ -15,6 +16,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public final class DependencyAnalyzer
 {
@@ -38,10 +40,11 @@ public final class DependencyAnalyzer
         for (int id : ids)
         {
             DependencyRelation relation = findCache(id);
-            if (relation != null)
+            if (relation == null)
             {
-                list.add(relation);
+
             }
+            list.add(relation);
         }
         return DependencyImpl.newInstance(owner, list);
     }
@@ -63,14 +66,21 @@ public final class DependencyAnalyzer
         return null;
     }
 
+    private final Class<?> ownerType;
+
     private final Context context;
+
+    private final Set<Integer> includes = new ArraySet<>();
 
     private final Map<String, DependencyProvider> providers = new ArrayMap<>();
 
-    private DependencyAnalyzer(int ResIds, Context context)
+    private DependencyAnalyzer(Class<?> ownerType,
+                               int rawXml,
+                               Context context)
     {
+        this.ownerType = ownerType;
         this.context = context.getApplicationContext();
-
+        analysis(getDocument(rawXml));
     }
 
     private Document getDocument(@RawRes int rawXml)
@@ -83,5 +93,12 @@ public final class DependencyAnalyzer
             throw new RuntimeException(e);
         }
     }
+
+    private void analysis(Document document)
+    {
+
+    }
+
+
 
 }

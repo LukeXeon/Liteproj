@@ -193,7 +193,7 @@ public final class DependencyImpl
             DependencyProvider provider = relation.getProvider(name);
             if (provider != null)
             {
-                if (DependencyType.SINGLETON.equals(provider.getType()))
+                if (DependencyType.Singleton.equals(provider.getType()))
                 {
                     Object singleton = singletons.get(name);
                     if (singleton == null)
@@ -236,7 +236,7 @@ public final class DependencyImpl
     {
         if (OWNER.equals(name))
         {
-            return DependencyType.SINGLETON;
+            return DependencyType.Singleton;
         }
         for (DependencyRelation item : dependencies.keySet())
         {

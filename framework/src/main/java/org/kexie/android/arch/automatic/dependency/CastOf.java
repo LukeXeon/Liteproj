@@ -1,7 +1,6 @@
 package org.kexie.android.arch.automatic.dependency;
 
-public enum DependencyType
+public interface CastOf<T>
 {
-    Singleton,
-    Factory,
+    Object cast(T obj);
 }
