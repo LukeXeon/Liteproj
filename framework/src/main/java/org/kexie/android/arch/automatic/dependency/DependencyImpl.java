@@ -70,10 +70,10 @@ public final class DependencyImpl
                     @Override
                     public <Type> Type get(String name)
                     {
-                        if (OWNER.equals(name))
+                        if (AnalyzerUtil.OWNER.equals(name))
                         {
                             AppCompatActivity activity
-                                    = DependencyImpl.this.get(OWNER);
+                                    = DependencyImpl.this.get(AnalyzerUtil.OWNER);
                             return (Type) activity.getApplicationContext();
                         }
                         return DependencyImpl.this.get(name);
@@ -103,9 +103,9 @@ public final class DependencyImpl
                     @Override
                     public <Type> Type get(String name)
                     {
-                        if (OWNER.equals(name))
+                        if (AnalyzerUtil.OWNER.equals(name))
                         {
-                            Fragment fragment = DependencyImpl.this.get(OWNER);
+                            Fragment fragment = DependencyImpl.this.get(AnalyzerUtil.OWNER);
                             return (Type) Objects.requireNonNull(
                                     AppCompatActivity.class.cast(
                                             fragment.getActivity()
@@ -139,9 +139,9 @@ public final class DependencyImpl
                     @Override
                     public <Type> Type get(String name)
                     {
-                        if (OWNER.equals(name))
+                        if (AnalyzerUtil.OWNER.equals(name))
                         {
-                            Fragment fragment = DependencyImpl.this.get(OWNER);
+                            Fragment fragment = DependencyImpl.this.get(AnalyzerUtil.OWNER);
                             return (Type) Objects.requireNonNull(
                                     AppCompatActivity.class.cast(
                                             fragment.getActivity()
@@ -184,7 +184,7 @@ public final class DependencyImpl
     @Override
     public <T> T get(String name)
     {
-        if (OWNER.equals(name))
+        if (AnalyzerUtil.OWNER.equals(name))
         {
             return (T) getOwner();
         }
@@ -214,7 +214,7 @@ public final class DependencyImpl
     @Override
     public Class<?> getResultType(String name)
     {
-        if (OWNER.equals(name))
+        if (AnalyzerUtil.OWNER.equals(name))
         {
             return ownerType;
         }
@@ -234,7 +234,7 @@ public final class DependencyImpl
     @Override
     public DependencyType getDependencyType(String name)
     {
-        if (OWNER.equals(name))
+        if (AnalyzerUtil.OWNER.equals(name))
         {
             return DependencyType.Singleton;
         }

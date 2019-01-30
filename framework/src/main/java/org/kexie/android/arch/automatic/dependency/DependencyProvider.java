@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 
 public final class DependencyProvider
+        implements Provider
 {
 
     private final DependencyType type;
@@ -24,6 +25,7 @@ public final class DependencyProvider
                 : Collections.unmodifiableList(setters);
     }
 
+    @Override
     @NonNull
     @SuppressWarnings({"unchecked", "WeakerAccess"})
     public <T> T newInstance(Dependency dependency)
@@ -36,6 +38,7 @@ public final class DependencyProvider
         return (T) target;
     }
 
+    @Override
     @NonNull
     @SuppressWarnings("WeakerAccess")
     public DependencyType getType()
@@ -43,6 +46,7 @@ public final class DependencyProvider
         return type;
     }
 
+    @Override
     @NonNull
     @SuppressWarnings({"unchecked", "WeakerAccess"})
     public <T> Class<T> getResultType()
