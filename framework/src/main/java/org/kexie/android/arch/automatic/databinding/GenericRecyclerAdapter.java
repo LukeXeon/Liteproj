@@ -11,13 +11,16 @@ import com.chad.library.adapter.base.BaseViewHolder;
 public class GenericRecyclerAdapter<T>
         extends BaseQuickAdapter<T,BaseViewHolder>
 {
-    private final String setterName;
+    final String setterName;
+
+    final int layoutRes;
 
     @SuppressWarnings("WeakerAccess")
     public GenericRecyclerAdapter(String variableName,
                                   @LayoutRes int layoutResId)
     {
         super(layoutResId);
+        this.layoutRes = layoutResId;
         this.setterName = variableName;
     }
 

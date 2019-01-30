@@ -38,7 +38,7 @@ public final class DependencyRelation
     }
 
     @Nullable
-    protected DependencyProvider getProvider(String name)
+    public DependencyProvider getProvider(String name)
     {
         return providers.get(name);
     }

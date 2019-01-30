@@ -17,9 +17,9 @@ import java.util.List;
 public class GenericPagerAdapter<T>
         extends PagerAdapter
 {
-    private final String setterName;
+    final String setterName;
 
-    private final int layoutRes;
+    final int layoutRes;
 
     private final SparseArray<ViewDataBinding> using;
 

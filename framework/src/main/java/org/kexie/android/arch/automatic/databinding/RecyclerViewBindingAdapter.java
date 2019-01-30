@@ -17,7 +17,6 @@ public final class RecyclerViewBindingAdapter
     }
 
     @SuppressWarnings("unchecked")
-    @BindingAdapter({"app:dataSource"})
     public static void setDataSource(RecyclerView view, List<?> data)
     {
         GenericRecyclerAdapter adapter
@@ -32,11 +31,23 @@ public final class RecyclerViewBindingAdapter
         adapter.setNewData(data);
     }
 
-    @BindingAdapter({"app:itemName", "app:itemLayout"})
+    @SuppressWarnings("unchecked")
+    @BindingAdapter({"app:itemName",
+            "app:itemLayout",
+            "app:dataSource"})
     public static void setAdapter(RecyclerView view,
                                   String itemName,
-                                  @LayoutRes int itemLayout)
+                                  @LayoutRes int itemLayout,
+                                  List<?> dataSource)
     {
-        view.setAdapter(new GenericRecyclerAdapter<>(itemName, itemLayout));
+        GenericRecyclerAdapter adapter = (GenericRecyclerAdapter) view.getAdapter();
+        if (adapter == null
+                || !adapter.setterName.equals(itemName)
+                || adapter.layoutRes != itemLayout)
+        {
+            adapter = new GenericRecyclerAdapter(itemName, itemLayout);
+            view.setAdapter(adapter);
+        }
+        adapter.setNewData(dataSource);
     }
 }

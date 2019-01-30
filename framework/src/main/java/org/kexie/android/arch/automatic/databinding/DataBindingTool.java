@@ -15,7 +15,6 @@ public final class DataBindingTool
         throw new AssertionError();
     }
 
-
     private static final Map<Class<? extends ViewDataBinding>,
             Map<String, Method>> TABLE = new ArrayMap<>();
 
