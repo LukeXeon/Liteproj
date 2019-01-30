@@ -2,58 +2,46 @@ package org.kexie.android.arch.automatic.dependency;
 
 import android.support.annotation.NonNull;
 
-public abstract class Dependency
+public interface Dependency
 {
-    public final static String FIELD = "field";
+    String FIELD = "field";
 
-    public final static String PROPERTY = "property";
+    String PROPERTY = "property";
 
-    public final static String NEW = "new";
+    String NEW = "new";
 
-    public final static String VAR = "var";
+    String VAR = "var";
 
-    public final static String ARG = "arg";
+    String ARG = "arg";
 
-    public final static String REF = "ref";
+    String REF = "ref";
 
-    public final static String CLASS = "class";
+    String CLASS = "class";
 
-    public final static String NAME = "name";
+    String NAME = "name";
 
-    public final static String INCLUDE = "include";
+    String INCLUDE = "include";
 
-    public final static String SINGLETON = "singleton";
+    String SINGLETON = "singleton";
 
-    public final static String FACTORY = "factory";
+    String FACTORY = "factory";
 
-    public final static String SCOPE = "scope";
+    String SCOPE = "scope";
 
-    public final static String RAW_RES = "@raw/";
+    String RAW_RES = "@raw/";
 
-    public final static String LET = "let";
+    String LET = "let";
 
-    public final static String OWNER = "owner";
-
-    @NonNull
-    public final <T> T get(String name)
-    {
-        return onGet(name, this);
-    }
+    String OWNER = "owner";
 
     @NonNull
-    public final <T> Class<T> getOwnerType()
-    {
-        return getResultType(OWNER);
-    }
+    @SuppressWarnings({"WeakerAccess"})
+    <T> T get(String name);
 
     @NonNull
-    protected abstract <T> T onGet(String name, Dependency dependency);
+    Class<?> getResultType(String name);
 
     @NonNull
-    public abstract <T> Class<T> getResultType(String name);
+    DependencyType getDependencyType(String name);
 
-    @NonNull
-    public abstract DependencyType getDependencyType(String name);
-
-    public abstract void clear();
 }

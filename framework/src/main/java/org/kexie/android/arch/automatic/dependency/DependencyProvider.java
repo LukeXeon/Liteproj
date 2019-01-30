@@ -26,8 +26,6 @@ public final class DependencyProvider
         void set(Object target, Dependency dependency);
     }
 
-    private final static Class<?>[] EMPTY_CLASSES = new Class<?>[0];
-
     private final DependencyType type;
     private final Factory factory;
     private final List<Setter> setters;
@@ -53,7 +51,7 @@ public final class DependencyProvider
         for (int i = 0; i < refs.size(); i++)
         {
             String name = refs.get(i);
-            args[i] = Types.castTo(dependency.get(name), targetClasses[i]);
+            args[i] = InternalUtil.castTo(dependency.get(name), targetClasses[i]);
         }
         return args;
     }
@@ -138,7 +136,8 @@ public final class DependencyProvider
                             getReferences(references,
                                     method.getParameterTypes(),
                                     dependency
-                            ));
+                            )
+                    );
                 } catch (Exception e)
                 {
                     throw new RuntimeException(e);
@@ -219,7 +218,7 @@ public final class DependencyProvider
             @Override
             public Class<?>[] getParameterTypes()
             {
-                return EMPTY_CLASSES;
+                return new Class<?>[0];
             }
         };
     }

@@ -25,7 +25,7 @@ public class GenericPagerAdapter<T>
 
     private final List<T> data;
 
-    private final List<ViewDataBinding> bindingCache;
+    private final List<ViewDataBinding> cache;
 
     @SuppressWarnings("WeakerAccess")
     public GenericPagerAdapter(String variableName,
@@ -35,7 +35,7 @@ public class GenericPagerAdapter<T>
         this.layoutRes = layoutRes;
         this.using = new SparseArray<>();
         this.data = new ArrayList<>();
-        this.bindingCache = new ArrayList<>();
+        this.cache = new ArrayList<>();
     }
 
     @NonNull
@@ -46,7 +46,7 @@ public class GenericPagerAdapter<T>
         ViewDataBinding binding = using.get(position);
         if (binding == null)
         {
-            binding = newBinding(container);
+            binding = getBinding(container);
             using.put(position, binding);
         }
         DataBindingTool.setVariable(binding, setterName, data.get(position));
@@ -55,17 +55,19 @@ public class GenericPagerAdapter<T>
         return view;
     }
 
-    private ViewDataBinding newBinding(ViewGroup root)
+    private ViewDataBinding getBinding(ViewGroup root)
     {
-        if (!bindingCache.isEmpty())
+        if (!cache.isEmpty())
         {
-            return bindingCache.remove(bindingCache.size() - 1);
+            return cache.remove(cache.size() - 1);
         } else
         {
             return DataBindingUtil.inflate(
                     LayoutInflater.from(root.getContext()),
                     layoutRes,
-                    root, false);
+                    root,
+                    false
+            );
         }
     }
 
@@ -77,13 +79,14 @@ public class GenericPagerAdapter<T>
         destroyItem(container, position, (View) object);
     }
 
+    @SuppressWarnings({"WeakerAccess"})
     public void destroyItem(@NonNull ViewGroup container,
                             int position,
                             @NonNull View view)
     {
         container.removeView(view);
         using.remove(position);
-        bindingCache.add(DataBindingUtil.bind(view));
+        cache.add(DataBindingUtil.bind(view));
     }
 
     public List<T> getData()
@@ -91,6 +94,7 @@ public class GenericPagerAdapter<T>
         return data;
     }
 
+    @SuppressWarnings({"WeakerAccess"})
     public void setNewData(@Nullable List<T> data)
     {
         this.data.clear();

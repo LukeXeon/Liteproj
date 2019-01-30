@@ -1,5 +1,6 @@
 package org.kexie.android.arch.automatic.dependency;
 
+import android.support.annotation.NonNull;
 import android.support.annotation.RawRes;
 
 import java.lang.annotation.Retention;
@@ -13,6 +14,6 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target({FIELD, METHOD})
 public @interface Using
 {
-    @RawRes
-    int value();
+    @NonNull
+    int[] value();
 }

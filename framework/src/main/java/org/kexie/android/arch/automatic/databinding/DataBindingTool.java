@@ -10,6 +10,12 @@ import java.util.Map;
 
 public final class DataBindingTool
 {
+    private DataBindingTool()
+    {
+        throw new AssertionError();
+    }
+
+
     private static final Map<Class<? extends ViewDataBinding>,
             Map<String, Method>> TABLE = new ArrayMap<>();
 
@@ -66,7 +72,7 @@ public final class DataBindingTool
         }
     }
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "WeakerAccess"})
     public static <T> T getVariable(ViewDataBinding binding,
                                     String variableName)
     {
