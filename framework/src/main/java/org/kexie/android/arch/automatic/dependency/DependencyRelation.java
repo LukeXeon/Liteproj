@@ -2,9 +2,11 @@ package org.kexie.android.arch.automatic.dependency;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.ArrayMap;
+import android.support.v4.util.ArraySet;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 public final class DependencyRelation
 {
@@ -23,6 +25,11 @@ public final class DependencyRelation
             this.providers = new ArrayMap<>();
             this.providers.putAll(providers);
         }
+    }
+
+    public Set<String> nameSet()
+    {
+        return new ArraySet<>(providers.keySet());
     }
 
     public Class<?> getOwnerType()

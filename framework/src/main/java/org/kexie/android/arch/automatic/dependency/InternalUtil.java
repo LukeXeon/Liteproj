@@ -14,6 +14,11 @@ public final class InternalUtil
         throw new AssertionError();
     }
 
+    private interface CastOf<T>
+    {
+        Object cast(T obj);
+    }
+
     private final static Map<Class<?>, Map<Class<?>, CastOf>> CAST_OF;
 
     private final static Pattern NAME_PATTERN;
@@ -98,11 +103,6 @@ public final class InternalUtil
         };
 
         NAME_PATTERN = Pattern.compile("[\u4e00-\u9fa5_A-Za-z][\u4e00-\u9fa5_A-Za-z0-9]*");
-    }
-
-    private interface CastOf<T>
-    {
-        Object cast(T obj);
     }
 
     static boolean isAssignTo(Class<?> objClass, Class<?> targetClass)

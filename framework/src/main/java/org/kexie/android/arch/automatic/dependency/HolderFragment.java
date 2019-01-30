@@ -79,7 +79,6 @@ public final class HolderFragment extends Fragment
     public void onDetach()
     {
         super.onDetach();
-        dependency.clear();
         dependency = null;
     }
 }

@@ -34,12 +34,16 @@ public final class DependencyAnalyzer
         {
             return null;
         }
-        List<Dependency> list = new ArrayList<>();
+        List<DependencyRelation> list = new ArrayList<>();
         for (int id : ids)
         {
             DependencyRelation relation = findCache(id);
+            if (relation != null)
+            {
+                list.add(relation);
+            }
         }
-        return null;
+        return DependencyImpl.newInstance(owner, list);
     }
 
     @Nullable

@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.permisssons;
+package org.kexie.android.arch.automatic.permissson;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;

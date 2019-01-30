@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.permisssons;
+package org.kexie.android.arch.automatic.permissson;
 
 import android.app.Application;
 import android.content.pm.PackageInfo;

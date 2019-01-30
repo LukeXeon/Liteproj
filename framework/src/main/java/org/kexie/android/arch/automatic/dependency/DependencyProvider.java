@@ -41,7 +41,6 @@ public final class DependencyProvider
                 : Collections.unmodifiableList(setters);
     }
 
-
     @NonNull
     private static Object[] getReferences(List<String> refs,
                                           Class<?>[] targetClasses,

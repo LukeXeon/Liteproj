@@ -9,7 +9,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import org.kexie.android.arch.automatic.dependency.Dependencies;
-import org.kexie.android.arch.automatic.permisssons.Permissions;
+import org.kexie.android.arch.automatic.permissson.Permissions;
 
 import java.util.Objects;
 
