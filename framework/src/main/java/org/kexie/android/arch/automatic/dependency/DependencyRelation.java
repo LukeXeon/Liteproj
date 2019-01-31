@@ -11,10 +11,10 @@ import java.util.Set;
 public final class DependencyRelation
 {
     private final Class<?> ownerType;
-    private final Map<String, DependencyProvider> providers;
+    private final Map<String, Provider> providers;
 
-    private DependencyRelation(@NonNull Class<?> ownerType,
-                               @Nullable Map<String, DependencyProvider> providers)
+    public DependencyRelation(@NonNull Class<?> ownerType,
+                              @Nullable Map<String, Provider> providers)
     {
         this.ownerType = ownerType;
         if (providers == null)
@@ -38,7 +38,7 @@ public final class DependencyRelation
     }
 
     @Nullable
-    public DependencyProvider getProvider(String name)
+    public Provider getProvider(String name)
     {
         return providers.get(name);
     }

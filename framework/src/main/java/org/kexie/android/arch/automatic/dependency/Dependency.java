@@ -14,7 +14,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 
-public class Dependency
+public final class Dependency
 {
     public final static String OWNER = "owner";
 
@@ -55,7 +55,7 @@ public class Dependency
                           @NonNull List<DependencyRelation> relations)
     {
         this.ownerType = owner.getClass();
-        AnalyzerUtil.checkSupportType(ownerType);
+        Analyzing.checkSupportType(ownerType);
         this.owner = new WeakReference<>(owner);
         for (DependencyRelation relation : relations)
         {
@@ -118,7 +118,7 @@ public class Dependency
         }
         for (DependencyRelation relation : dependencies.keySet())
         {
-            DependencyProvider provider = relation.getProvider(name);
+            Provider provider = relation.getProvider(name);
             if (provider != null)
             {
                 if (DependencyType.Singleton.equals(provider.getType()))
@@ -147,7 +147,7 @@ public class Dependency
         }
         for (DependencyRelation item : dependencies.keySet())
         {
-            DependencyProvider provider = item.getProvider(name);
+            Provider provider = item.getProvider(name);
             if (provider != null)
             {
                 return provider.getResultType();
@@ -166,7 +166,7 @@ public class Dependency
         }
         for (DependencyRelation item : dependencies.keySet())
         {
-            DependencyProvider provider = item.getProvider(name);
+            Provider provider = item.getProvider(name);
             if (provider != null)
             {
                 return provider.getType();

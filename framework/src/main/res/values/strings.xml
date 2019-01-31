@@ -1,16 +1,16 @@
 <resources>
-    <string name="app_name">Common</string>
+    <string name="app_name">keixe android arch</string>
     <string name="owner_string">owner</string>
     <string name="field_string">field</string>
     <string name="provider_string">provider</string>
     <string name="property_string">property</string>
     <string name="new_string">new</string>
+    <string name="new_normal_string">\@new</string>
     <string name="var_string">var</string>
     <string name="arg_string">arg</string>
     <string name="ref_string">ref</string>
     <string name="class_string">class</string>
     <string name="name_string">name</string>
-    <string name="include_string">include</string>
     <string name="singleton_string">singleton</string>
     <string name="factory_string">factory</string>
     <string name="scope_string">scope</string>

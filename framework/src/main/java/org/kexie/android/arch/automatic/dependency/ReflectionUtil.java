@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public class ReflectionUtil
+public final class ReflectionUtil
 {
     private ReflectionUtil()
     {
@@ -20,82 +20,82 @@ public class ReflectionUtil
 
     private final static Map<Class<?>, Map<Class<?>, CastOf>> CAST_OF
             = Collections.unmodifiableMap(
-                    new ArrayMap<Class<?>, Map<Class<?>, CastOf>>()
-    {
-        {
-            CastOf toThis = new CastOf<Object>()
+            new ArrayMap<Class<?>, Map<Class<?>, CastOf>>()
             {
-                @Override
-                public Object cast(Object obj)
                 {
-                    return obj;
+                    CastOf toThis = new CastOf<Object>()
+                    {
+                        @Override
+                        public Object cast(Object obj)
+                        {
+                            return obj;
+                        }
+                    };
+                    CastOf toShort = new CastOf<Number>()
+                    {
+                        @Override
+                        public Object cast(Number number)
+                        {
+                            return number.shortValue();
+                        }
+                    };
+                    CastOf toInt = new CastOf<Number>()
+                    {
+                        @Override
+                        public Object cast(Number number)
+                        {
+                            return number.intValue();
+                        }
+                    };
+                    CastOf toLong = new CastOf<Number>()
+                    {
+                        @Override
+                        public Object cast(Number number)
+                        {
+                            return number.longValue();
+                        }
+                    };
+                    CastOf toDouble = new CastOf<Number>()
+                    {
+                        @Override
+                        public Object cast(Number number)
+                        {
+                            return number.doubleValue();
+                        }
+                    };
+                    Map<Class<?>, CastOf> castOf = new ArrayMap<>();
+                    castOf.put(Character.class, toThis);
+                    put(char.class, castOf);
+                    castOf = new ArrayMap<>();
+                    castOf.put(Boolean.class, toThis);
+                    put(boolean.class, castOf);
+                    castOf = new ArrayMap<>();
+                    castOf.put(Byte.class, toThis);
+                    put(byte.class, castOf);
+                    castOf = new ArrayMap<>();
+                    castOf.put(Byte.class, toShort);
+                    castOf.put(Short.class, toThis);
+                    put(short.class, castOf);
+                    castOf = new ArrayMap<>();
+                    castOf.put(Byte.class, toInt);
+                    castOf.put(Short.class, toInt);
+                    castOf.put(Integer.class, toThis);
+                    put(int.class, castOf);
+                    castOf = new ArrayMap<>();
+                    castOf.put(Byte.class, toLong);
+                    castOf.put(Short.class, toLong);
+                    castOf.put(Integer.class, toLong);
+                    castOf.put(Long.class, toThis);
+                    put(long.class, castOf);
+                    castOf = new ArrayMap<>();
+                    castOf.put(Float.class, toThis);
+                    put(float.class, castOf);
+                    castOf = new ArrayMap<>();
+                    castOf.put(Float.class, toDouble);
+                    castOf.put(Double.class, toThis);
+                    put(double.class, castOf);
                 }
-            };
-            CastOf toShort = new CastOf<Number>()
-            {
-                @Override
-                public Object cast(Number number)
-                {
-                    return number.shortValue();
-                }
-            };
-            CastOf toInt = new CastOf<Number>()
-            {
-                @Override
-                public Object cast(Number number)
-                {
-                    return number.intValue();
-                }
-            };
-            CastOf toLong = new CastOf<Number>()
-            {
-                @Override
-                public Object cast(Number number)
-                {
-                    return number.longValue();
-                }
-            };
-            CastOf toDouble = new CastOf<Number>()
-            {
-                @Override
-                public Object cast(Number number)
-                {
-                    return number.doubleValue();
-                }
-            };
-            Map<Class<?>, CastOf> castOf = new ArrayMap<>();
-            castOf.put(Character.class, toThis);
-            put(char.class, castOf);
-            castOf = new ArrayMap<>();
-            castOf.put(Boolean.class, toThis);
-            put(boolean.class, castOf);
-            castOf = new ArrayMap<>();
-            castOf.put(Byte.class, toThis);
-            put(byte.class, castOf);
-            castOf = new ArrayMap<>();
-            castOf.put(Byte.class, toShort);
-            castOf.put(Short.class, toThis);
-            put(short.class, castOf);
-            castOf = new ArrayMap<>();
-            castOf.put(Byte.class, toInt);
-            castOf.put(Short.class, toInt);
-            castOf.put(Integer.class, toThis);
-            put(int.class, castOf);
-            castOf = new ArrayMap<>();
-            castOf.put(Byte.class, toLong);
-            castOf.put(Short.class, toLong);
-            castOf.put(Integer.class, toLong);
-            castOf.put(Long.class, toThis);
-            put(long.class, castOf);
-            castOf = new ArrayMap<>();
-            castOf.put(Float.class, toThis);
-            put(float.class, castOf);
-            castOf = new ArrayMap<>();
-            castOf.put(Float.class, toDouble);
-            castOf.put(Double.class, toThis);
-            put(double.class, castOf);
-        }
-    });
+            });
 
     static boolean isAssignTo(Class<?> objClass, Class<?> targetClass)
     {
@@ -265,7 +265,7 @@ public class ReflectionUtil
     }
 
     @SuppressWarnings("unchecked")
-    public static Factory newConstant(Object object)
+    public static Factory newConstantFactory(Object object)
     {
         final Object notNull = Objects.requireNonNull(object);
         return new Factory()
@@ -290,4 +290,79 @@ public class ReflectionUtil
         };
     }
 
+    public static Method
+    findSupportMethod(Class<?> clazz,
+                      String name,
+                      Class<?>[] classes,
+                      Filter<Method> filter)
+            throws NoSuchMethodException
+    {
+        if (classes == null)
+        {
+            return clazz.getMethod(name);
+        }
+        for (Method method : clazz.getMethods())
+        {
+            boolean match = true;
+            Class<?>[] pram = method.getParameterTypes();
+            if (method.getName().equals(name)
+                    && pram.length == classes.length
+                    && (filter == null || filter.filter(method)))
+            {
+                for (int i = 0; i < pram.length; i++)
+                {
+                    if (!isAssignTo(classes[i], pram[i]))
+                    {
+                        match = false;
+                        break;
+                    }
+                }
+            } else
+            {
+                match = false;
+            }
+            if (match)
+            {
+                return method;
+            }
+        }
+        throw new NoSuchMethodException("name by " + name);
+    }
+
+    public static Constructor<?>
+    findSupportConstructor(Class<?> tClass,
+                           Class<?>[] classes,
+                           Filter<Constructor<?>> filter)
+            throws NoSuchMethodException
+    {
+        if (classes == null)
+        {
+            return tClass.getConstructor();
+        }
+        for (Constructor<?> constructor : tClass.getConstructors())
+        {
+            boolean match = true;
+            Class<?>[] pram = constructor.getParameterTypes();
+            if (pram.length == classes.length
+                    && (filter == null || filter.filter(constructor)))
+            {
+                for (int i = 0; i < pram.length; i++)
+                {
+                    if (!isAssignTo(classes[i], pram[i]))
+                    {
+                        match = false;
+                        break;
+                    }
+                }
+            } else
+            {
+                match = false;
+            }
+            if (match)
+            {
+                return constructor;
+            }
+        }
+        throw new NoSuchMethodException("no constructor match");
+    }
 }
