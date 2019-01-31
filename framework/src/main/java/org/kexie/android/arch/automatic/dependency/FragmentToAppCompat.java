@@ -7,14 +7,14 @@ import android.support.v7.app.AppCompatActivity;
 
 import java.util.Objects;
 
-public final class FCAppDependency
+public final class FragmentToAppCompat
         extends DependencyWrapper
 {
 
     private final Class<? extends Application> requireType;
 
-    public FCAppDependency(Dependency base,
-                           Class<? extends Application>
+    public FragmentToAppCompat(Dependency base,
+                               Class<? extends Application>
                                                requireType)
     {
         super(base);

@@ -1,17 +1,19 @@
 package org.kexie.android.arch.automatic.dependency;
 
-import android.app.Application;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 
-public final class ACAppDependency
-        extends DependencyWrapper
-{
-    private final Class<? extends Application> requireType;
+import java.util.Objects;
 
-    public ACAppDependency(Dependency base,
-                           Class<? extends Application>
-                                               requireType)
+public final class FragmentToActivityCompat
+    extends DependencyWrapper
+{
+    private final Class<? extends AppCompatActivity> requireType;
+
+    public FragmentToActivityCompat(Dependency base,
+                                    Class<? extends AppCompatActivity>
+                                                    requireType)
     {
         super(base);
         this.requireType = requireType;
@@ -22,8 +24,12 @@ public final class ACAppDependency
     @Override
     public <T> T getOwner()
     {
-        AppCompatActivity activity = super.getOwner();
-        return (T) activity.getApplicationContext();
+        Fragment fragment = super.getOwner();
+        return (T) Objects.requireNonNull(
+                AppCompatActivity.class.cast(
+                        fragment.getActivity()
+                )
+        ).getApplicationContext();
     }
 
     @NonNull

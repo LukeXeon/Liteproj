@@ -1,7 +1,6 @@
 package org.kexie.android.arch.automatic.dependency;
 
 import android.app.Application;
-import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.util.ArrayMap;
@@ -66,19 +65,19 @@ public final class DependencyImpl
                     || Application.class.isAssignableFrom(requireType))
             {
                 dependencies.put(relation,
-                        new ACAppDependency(this,
+                        new ActivityToAppCompat(this,
                                 (Class<? extends Application>) requireType));
             } else if (Fragment.class.isAssignableFrom(ownerType)
                     || AppCompatActivity.class.isAssignableFrom(requireType))
             {
                 dependencies.put(relation,
-                        new FCADependency(this,
+                        new FragmentToActivityCompat(this,
                                 (Class<? extends AppCompatActivity>) requireType));
             } else if (Fragment.class.isAssignableFrom(ownerType)
                     || Application.class.isAssignableFrom(requireType))
             {
                 dependencies.put(relation,
-                        new FCAppDependency(this,
+                        new FragmentToAppCompat(this,
                                 (Class<? extends Application>) requireType));
             } else
             {
