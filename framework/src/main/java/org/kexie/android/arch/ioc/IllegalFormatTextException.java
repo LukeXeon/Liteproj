@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.dependency;
+package org.kexie.android.arch.ioc;
 
 final class IllegalFormatTextException extends Exception
 {

@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.dependency;
+package org.kexie.android.arch.ioc;
 
 import android.content.Context;
 import android.support.v4.app.Fragment;
@@ -30,11 +30,11 @@ public final class HolderFragment extends Fragment
     {
         if (object instanceof AppCompatActivity)
         {
-            return getByFragment(((AppCompatActivity) object)
+            return fromHolder(((AppCompatActivity) object)
                     .getSupportFragmentManager());
         } else if (object instanceof Fragment)
         {
-            return getByFragment(((Fragment) object)
+            return fromHolder(((Fragment) object)
                     .getChildFragmentManager());
         } else
         {
@@ -56,13 +56,10 @@ public final class HolderFragment extends Fragment
             transaction.add(holder,
                     HolderFragment.class.getCanonicalName())
                     .commitNowAllowingStateLoss();
-        } else
-        {
-            throw new IllegalStateException("holder fragment already exists");
         }
     }
 
-    private static Dependency getByFragment(FragmentManager fragmentManager)
+    private static Dependency fromHolder(FragmentManager fragmentManager)
     {
         HolderFragment holder = (HolderFragment) fragmentManager
                 .findFragmentByTag(
@@ -70,7 +67,7 @@ public final class HolderFragment extends Fragment
                 );
         if (holder == null)
         {
-            throw new IllegalStateException("no prepare");
+            throw new IllegalStateException("no prepareInject");
         }
         return holder.getDependency();
     }

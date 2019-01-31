@@ -1,8 +1,8 @@
-package org.kexie.android.arch.automatic.dependency;
+package org.kexie.android.arch.ioc;
 
 import android.support.annotation.NonNull;
 
-public final class OwnerProxyProvider
+final class OwnerProxyProvider
     implements Provider
 {
     private final Class<?> ownerType;

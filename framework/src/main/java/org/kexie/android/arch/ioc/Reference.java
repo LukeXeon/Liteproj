@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.dependency;
+package org.kexie.android.arch.ioc;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;

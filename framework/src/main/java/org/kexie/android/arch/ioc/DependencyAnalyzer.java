@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.dependency;
+package org.kexie.android.arch.ioc;
 
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -13,7 +13,6 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
-import org.kexie.android.arch.R;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -186,7 +185,7 @@ final class DependencyAnalyzer
         List<Setter> setters = new LinkedList<>();
         Factory factory = doFindNew(element, path);
         path = factory.getResultType();
-        if (!AnalyzerUtil.isEmptyList(elements))
+        if (AnalyzerUtil.listNoEmpty(elements))
         {
             for (Element item : elements)
             {
@@ -272,7 +271,7 @@ final class DependencyAnalyzer
     {
         List<Element> elements = element.elements();
         Factory factory = null;
-        if (!AnalyzerUtil.isEmptyList(elements))
+        if (AnalyzerUtil.listNoEmpty(elements))
         {
             for (Element item : elements)
             {
@@ -308,7 +307,7 @@ final class DependencyAnalyzer
     {
         List<Element> elements = element.elements();
         List<String> refOrLet = new LinkedList<>();
-        if (!AnalyzerUtil.isEmptyList(elements))
+        if (AnalyzerUtil.listNoEmpty(elements))
         {
             for (Element item : elements)
             {

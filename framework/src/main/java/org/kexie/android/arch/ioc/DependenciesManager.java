@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.dependency;
+package org.kexie.android.arch.ioc;
 
 import android.app.Activity;
 import android.app.Application;
@@ -10,9 +10,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 
-
-
-import org.kexie.android.arch.automatic.app.EmptyActivityLifecycleCallbacks;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -29,7 +26,6 @@ public final class DependenciesManager
     private static Dependency appGlobal;
 
     @Nullable
-    @SuppressWarnings("WeakerAccess")
     public static Dependency of(Object object)
     {
         if (object instanceof Application)
@@ -43,7 +39,7 @@ public final class DependenciesManager
         return null;
     }
 
-    public static void init(Application application)
+    static void init(Application application)
     {
         final FragmentManager.FragmentLifecycleCallbacks
                 fragmentLifecycleCallbacks
@@ -96,7 +92,6 @@ public final class DependenciesManager
         }
     }
 
-    @SuppressWarnings("WeakerAccess")
     static void inject(Object object, Dependency dependency)
     {
         Class<?> type = object.getClass();

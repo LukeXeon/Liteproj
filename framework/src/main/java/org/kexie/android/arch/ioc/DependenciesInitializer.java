@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.app;
+package org.kexie.android.arch.ioc;
 
 import android.app.Application;
 import android.content.ContentProvider;
@@ -9,14 +9,11 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import org.kexie.android.arch.automatic.dependency.DependenciesManager;
-import org.kexie.android.arch.automatic.permissson.PermissionsManager;
-
 import java.util.Objects;
 
-public final class AutomaticInitializer extends ContentProvider
+public final class DependenciesInitializer extends ContentProvider
 {
-    private static final String TAG = "AutomaticInitializer";
+    private static final String TAG = "DependenciesInitializer";
 
     @Override
     public boolean onCreate()
@@ -25,7 +22,6 @@ public final class AutomaticInitializer extends ContentProvider
         Application application = (Application) Objects
                 .requireNonNull(getContext())
                 .getApplicationContext();
-        PermissionsManager.init(application);
         DependenciesManager.init(application);
         return true;
     }

@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.dependency;
+package org.kexie.android.arch.ioc;
 
 import android.app.Application;
 import android.support.annotation.NonNull;
@@ -171,9 +171,9 @@ final class AnalyzerUtil
         }
     }
 
-    static boolean isEmptyList(List<?> list)
+    static boolean listNoEmpty(List<?> list)
     {
-        return list == null || list.size() == 0;
+        return list != null && list.size() != 0;
     }
 
     static void checkSupportTypeCompat(Class<?> type)

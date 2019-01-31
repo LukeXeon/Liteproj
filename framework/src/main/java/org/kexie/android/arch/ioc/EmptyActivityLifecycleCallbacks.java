@@ -1,10 +1,10 @@
-package org.kexie.android.arch.automatic.app;
+package org.kexie.android.arch.ioc;
 
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
 
-public abstract class EmptyActivityLifecycleCallbacks
+abstract class EmptyActivityLifecycleCallbacks
         implements Application.ActivityLifecycleCallbacks
 {
     @Override

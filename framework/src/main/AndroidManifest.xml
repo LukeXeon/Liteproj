@@ -1,9 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="org.kexie.android.arch">
+          package="org.kexie.android.arch.ioc">
     <application>
         <provider
-            android:authorities="${applicationId}.automatic-initializer"
-            android:name=".automatic.app.AutomaticInitializer"
+            android:authorities="${applicationId}.ioc-initializer"
+            android:name=".DependenciesInitializer"
             android:exported="false"
             android:multiprocess="true"/>
     </application>
