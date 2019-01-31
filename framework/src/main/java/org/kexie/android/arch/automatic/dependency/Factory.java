@@ -5,6 +5,4 @@ public interface Factory
     <T> T newInstance(Dependency dependency);
 
     Class<?> getResultType();
-
-    Class<?>[] getParameterTypes();
 }

@@ -22,13 +22,14 @@ public final class Analyzing
         throw new AssertionError();
     }
 
-    private static final List<Class<?>> SUPPORT_TYPES
+    public static final List<Class<?>> SUPPORT_TYPES
             = Collections.unmodifiableList(new LinkedList<Class<?>>()
     {
         {
             add(Application.class);
             add(AppCompatActivity.class);
             add(Fragment.class);
+            add(LiteService.class);
         }
     });
 
@@ -175,7 +176,7 @@ public final class Analyzing
         return list == null || list.size() == 0;
     }
 
-    public static boolean checkSupportType(Class<?> type)
+    public static boolean checkSupportTypeCompat(Class<?> type)
     {
         for (Class<?> clazz : SUPPORT_TYPES)
         {
@@ -185,6 +186,18 @@ public final class Analyzing
             }
         }
         throw new IllegalStateException("no support type " + type);
+    }
+
+    public static boolean equalsToSupportTypes(Class<?> clazz)
+    {
+        for (Class<?> type : SUPPORT_TYPES)
+        {
+            if (type.equals(clazz))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     public static Provider

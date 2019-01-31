@@ -216,12 +216,6 @@ public final class ReflectionUtil
             {
                 return method.getReturnType();
             }
-
-            @Override
-            public Class<?>[] getParameterTypes()
-            {
-                return method.getParameterTypes();
-            }
         };
     }
 
@@ -256,11 +250,6 @@ public final class ReflectionUtil
                 return constructor.getDeclaringClass();
             }
 
-            @Override
-            public Class<?>[] getParameterTypes()
-            {
-                return constructor.getParameterTypes();
-            }
         };
     }
 
@@ -282,11 +271,6 @@ public final class ReflectionUtil
                 return notNull.getClass();
             }
 
-            @Override
-            public Class<?>[] getParameterTypes()
-            {
-                return new Class<?>[0];
-            }
         };
     }
 

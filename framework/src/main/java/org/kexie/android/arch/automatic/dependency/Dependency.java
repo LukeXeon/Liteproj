@@ -55,7 +55,7 @@ public final class Dependency
                           @NonNull List<DependencyRelation> relations)
     {
         this.ownerType = owner.getClass();
-        Analyzing.checkSupportType(ownerType);
+        Analyzing.checkSupportTypeCompat(ownerType);
         this.owner = new WeakReference<>(owner);
         for (DependencyRelation relation : relations)
         {
