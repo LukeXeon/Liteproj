@@ -17,6 +17,7 @@ import org.kexie.android.arch.R;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -129,7 +130,7 @@ public final class DependencyAnalyzer
             } else
             {
                 throw Analyzing.fromMessageThrow(element,
-                        "no a 'var' tag");
+                        "no found 'var' tag");
             }
         }
         return new DependencyRelation(owner.getResultType(), providers);
@@ -210,14 +211,60 @@ public final class DependencyAnalyzer
                 setters);
     }
 
-    private Setter doAnalysisField(Element element,Class<?> path)
+    private Setter doAnalysisField(Element element, Class<?> path)
     {
-        return null;
+        String name = Analyzing.getAttrIfEmptyThrow(element,
+                getString(R.string.name_string));
+        final String refOrLet = getRefOrLetAttr(element);
+        try
+        {
+            return ReflectionUtil.newSetter(
+                    ReflectionUtil.findSupportField(
+                            path,
+                            name,
+                            new Filter<Field>()
+                            {
+                                @Override
+                                public boolean filter(Field item)
+                                {
+                                    return ReflectionUtil.isAssignTo(
+                                            getProviderClassIfNullThrow(refOrLet),
+                                            item.getType()
+                                    ) && !Modifier.isFinal(item.getModifiers())
+                                            && !Modifier.isStatic(item.getModifiers());
+                                }
+                            }), refOrLet);
+        } catch (NoSuchFieldException e)
+        {
+            throw Analyzing.formExceptionThrow(element, e);
+        }
     }
 
-    private Setter doAnalysisProperty(Element element,Class<?> path)
+    private Setter doAnalysisProperty(Element element, Class<?> path)
     {
-        return null;
+        String name = Analyzing.getAttrIfEmptyThrow(element,
+                getString(R.string.name_string));
+        String refOrLet = getRefOrLetAttr(element);
+        try
+        {
+            return ReflectionUtil.newSetter(
+                    ReflectionUtil.findSupportMethod(path, "set"
+                                    + Character.toUpperCase(name.charAt(0))
+                                    + name.substring(1, name.length()),
+                            new Class<?>[]{getProviderClassIfNullThrow(refOrLet)},
+                            new Filter<Method>()
+                            {
+                                @Override
+                                public boolean filter(Method item)
+                                {
+                                    return void.class.equals(item.getReturnType())
+                                            && !Modifier.isStatic(item.getModifiers());
+                                }
+                            }), refOrLet);
+        } catch (NoSuchMethodException e)
+        {
+            throw Analyzing.formExceptionThrow(element, e);
+        }
     }
 
     private Factory doAnalysisNew(Element element, Class<?> path)

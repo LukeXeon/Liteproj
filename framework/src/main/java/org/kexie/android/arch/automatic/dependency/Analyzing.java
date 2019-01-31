@@ -105,13 +105,8 @@ public final class Analyzing
         }
     });
 
-    private final static Pattern NAME_PATTERN;
-
-    static
-    {
-        NAME_PATTERN = Pattern
-                .compile("[\u4e00-\u9fa5_A-Za-z][\u4e00-\u9fa5_A-Za-z0-9]*");
-    }
+    private final static Pattern NAME_PATTERN = Pattern
+            .compile("[\u4e00-\u9fa5_A-Za-z][\u4e00-\u9fa5_A-Za-z0-9]*");
 
     @Nullable
     public static String getAttrNoThrow(Element element,

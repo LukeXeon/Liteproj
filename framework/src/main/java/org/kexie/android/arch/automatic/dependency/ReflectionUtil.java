@@ -330,16 +330,16 @@ public final class ReflectionUtil
     }
 
     public static Constructor<?>
-    findSupportConstructor(Class<?> tClass,
+    findSupportConstructor(Class<?> clazz,
                            Class<?>[] classes,
                            Filter<Constructor<?>> filter)
             throws NoSuchMethodException
     {
         if (classes == null)
         {
-            return tClass.getConstructor();
+            return clazz.getConstructor();
         }
-        for (Constructor<?> constructor : tClass.getConstructors())
+        for (Constructor<?> constructor : clazz.getConstructors())
         {
             boolean match = true;
             Class<?>[] pram = constructor.getParameterTypes();
@@ -364,5 +364,21 @@ public final class ReflectionUtil
             }
         }
         throw new NoSuchMethodException("no constructor match");
+    }
+
+    public static Field
+    findSupportField(Class<?> clazz,
+                     String name,
+                     Filter<Field> filter)
+            throws NoSuchFieldException
+    {
+        Field field = clazz.getField(name);
+        if (filter == null || filter.filter(field))
+        {
+            return field;
+        } else
+        {
+            throw new NoSuchFieldException("can't found field name by " + name);
+        }
     }
 }
