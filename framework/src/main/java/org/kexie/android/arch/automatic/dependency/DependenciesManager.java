@@ -4,11 +4,15 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
+
+
 
 import org.kexie.android.arch.automatic.app.EmptyActivityLifecycleCallbacks;
 
@@ -54,12 +58,13 @@ public final class DependenciesManager
             {
                 if (!(fragment instanceof HolderFragment))
                 {
-                    fragment.getChildFragmentManager()
-                            .registerFragmentLifecycleCallbacks(
-                                    this,
-                                    false
-                            );
-                    inject(fragment);
+                    FragmentManager fragmentManager
+                            = fragment.getChildFragmentManager();
+                    fragmentManager.registerFragmentLifecycleCallbacks(
+                            this,
+                            false
+                    );
+                    HolderFragment.prepareInject(fragmentManager);
                 }
             }
         };
@@ -70,31 +75,32 @@ public final class DependenciesManager
                     public void onActivityCreated(Activity activity,
                                                   Bundle savedInstanceState)
                     {
+
                         if (activity instanceof AppCompatActivity)
                         {
                             AppCompatActivity appCompatActivity
                                     = (AppCompatActivity) activity;
-                            appCompatActivity.getSupportFragmentManager()
-                                    .registerFragmentLifecycleCallbacks(
-                                            fragmentLifecycleCallbacks,
-                                            false
-                                    );
-                            inject(appCompatActivity);
+                            FragmentManager fragmentManager
+                                    = appCompatActivity
+                                    .getSupportFragmentManager();
+                            fragmentManager.registerFragmentLifecycleCallbacks(
+                                    fragmentLifecycleCallbacks,
+                                    false
+                            );
+                            HolderFragment.prepareInject(fragmentManager);
                         }
                     }
                 });
         appGlobal = DependencyAnalyzer.analysis(application, application);
-        inject(application);
+        if (appGlobal != null)
+        {
+            inject(application, appGlobal);
+        }
     }
 
     @SuppressWarnings("WeakerAccess")
-    public static void inject(Object object)
+    static void inject(Object object, Dependency dependency)
     {
-        Dependency dependency = of(object);
-        if (dependency == null)
-        {
-            return;
-        }
         Class<?> type = object.getClass();
         while (type != null && !AnalyzerUtil.equalsToSupportTypes(type))
         {
@@ -152,4 +158,5 @@ public final class DependenciesManager
             type = type.getSuperclass();
         }
     }
+
 }

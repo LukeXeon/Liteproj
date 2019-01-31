@@ -16,4 +16,5 @@
     <string name="scope_string">scope</string>
     <string name="raw_res_header_string">\@raw/</string>
     <string name="let_string">let</string>
+    <string name="raw_string">raw</string>
 </resources>
