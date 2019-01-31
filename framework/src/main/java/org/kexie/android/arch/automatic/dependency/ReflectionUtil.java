@@ -285,11 +285,11 @@ final class ReflectionUtil
     static Method
     findSupportMethod(Class<?> clazz,
                       String name,
-                      Class<?>[] targetClasses,
+                      Class<?>[] sClasses,
                       Filter<Method> filter)
             throws NoSuchMethodException
     {
-        if (targetClasses == null)
+        if (sClasses == null)
         {
             return clazz.getMethod(name);
         }
@@ -298,12 +298,12 @@ final class ReflectionUtil
             boolean match = true;
             Class<?>[] pram = method.getParameterTypes();
             if (method.getName().equals(name)
-                    && pram.length == targetClasses.length
+                    && pram.length == sClasses.length
                     && (filter == null || filter.filter(method)))
             {
                 for (int i = 0; i < pram.length; i++)
                 {
-                    if (!isAssignTo(targetClasses[i], pram[i]))
+                    if (!isAssignTo(sClasses[i], pram[i]))
                     {
                         match = false;
                         break;
@@ -323,11 +323,11 @@ final class ReflectionUtil
 
     static Constructor<?>
     findSupportConstructor(Class<?> clazz,
-                           Class<?>[] targetClasses,
+                           Class<?>[] sClasses,
                            Filter<Constructor<?>> filter)
             throws NoSuchMethodException
     {
-        if (targetClasses == null)
+        if (sClasses == null)
         {
             return clazz.getConstructor();
         }
@@ -335,12 +335,12 @@ final class ReflectionUtil
         {
             boolean match = true;
             Class<?>[] pram = constructor.getParameterTypes();
-            if (pram.length == targetClasses.length
+            if (pram.length == sClasses.length
                     && (filter == null || filter.filter(constructor)))
             {
                 for (int i = 0; i < pram.length; i++)
                 {
-                    if (!isAssignTo(targetClasses[i], pram[i]))
+                    if (!isAssignTo(sClasses[i], pram[i]))
                     {
                         match = false;
                         break;
@@ -361,12 +361,12 @@ final class ReflectionUtil
     static Field
     findSupportField(Class<?> clazz,
                      String name,
-                     Class<?> targetClass,
+                     Class<?> sClass,
                      Filter<Field> filter)
             throws NoSuchFieldException
     {
         Field field = clazz.getField(name);
-        if (isAssignTo(field.getType(), targetClass)
+        if (isAssignTo(field.getType(), sClass)
                 && (filter == null || filter.filter(field)))
         {
             return field;

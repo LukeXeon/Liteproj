@@ -272,7 +272,7 @@ final class DependencyAnalyzer
     {
         List<Element> elements = element.elements();
         Factory factory = null;
-        if (AnalyzerUtil.isEmptyList(elements))
+        if (!AnalyzerUtil.isEmptyList(elements))
         {
             for (Element item : elements)
             {
@@ -308,11 +308,13 @@ final class DependencyAnalyzer
     {
         List<Element> elements = element.elements();
         List<String> refOrLet = new LinkedList<>();
-        if (AnalyzerUtil.isEmptyList(elements))
+        if (!AnalyzerUtil.isEmptyList(elements))
         {
             for (Element item : elements)
             {
-                if (getString(R.string.arg_string).equals(item.getName()))
+                String name = item.getName();
+                if (getString(R.string.let_string).equals(name)
+                        || getString(R.string.arg_string).equals(name))
                 {
                     refOrLet.add(getRefOrLetAttr(item));
                 } else
@@ -402,22 +404,15 @@ final class DependencyAnalyzer
         } else if (let != null)
         {
             Provider provider = getProvider(let);
-            if (provider != null)
+            if (provider == null)
             {
-
                 try
                 {
                     provider = AnalyzerUtil.newConstantProvider(let);
-                } catch (IllegalFormatTextException e)
+                    addProvider(let, provider);
+                } catch (IllegalFormatTextException | ProviderAlreadyExistsException e)
                 {
                     throw AnalyzerUtil.formExceptionThrow(element, e);
-                }
-                try
-                {
-                    addProvider(let, provider);
-                } catch (ProviderAlreadyExistsException e)
-                {
-                    throw AnalyzerUtil.formExceptionThrow(element,e);
                 }
             }
             return let;

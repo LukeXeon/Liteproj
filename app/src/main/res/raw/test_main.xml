@@ -27,4 +27,11 @@
     <var
         name="test9"
         class="java.lang.Object"/>
+    <var
+        name="factory"
+        class="org.kexie.android.arch.sample.Factory">
+        <new name="test">
+            <arg let="@xxxxxxxx"/>
+        </new>
+    </var>
 </scope>
