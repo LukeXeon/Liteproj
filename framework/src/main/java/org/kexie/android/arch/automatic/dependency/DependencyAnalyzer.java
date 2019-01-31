@@ -1,21 +1,15 @@
 package org.kexie.android.arch.automatic.dependency;
 
-import android.app.Application;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
-import android.support.v4.app.Fragment;
 import android.support.v4.util.ArrayMap;
 import android.support.v4.util.ArraySet;
 import android.support.v4.util.LruCache;
-import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
 
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
-import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.kexie.android.arch.R;
 
@@ -158,15 +152,48 @@ public final class DependencyAnalyzer
         return null;
     }
 
-    private final Provider ownerProxy;
+    private final Provider owner;
 
     private final Set<Integer> includes = new ArraySet<>();
 
     private final Map<String, Provider> providers = new ArrayMap<>();
 
-    private DependencyAnalyzer(Context context, Class<?> ownerType, int rawXml)
+    private DependencyAnalyzer(Context context,
+                               Class<?> ownerType,
+                               int rawXml)
     {
         super(context.getApplicationContext());
-        this.ownerProxy = new OwnerProxyProvider(ownerType);
+        this.owner = new OwnerProxyProvider(ownerType);
+    }
+
+    private Document getDocument(@RawRes int rawXml)
+    {
+        try (InputStream stream = getResources().openRawResource(rawXml))
+        {
+            return SAX_READER.read(stream);
+        } catch (IOException | DocumentException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Provider getProvider(String name)
+    {
+        if (getString(R.string.owner_string).equals(name))
+        {
+            return owner;
+        }
+        return providers.get(name);
+    }
+
+    private void addProvider(String name, Provider provider)
+    {
+        if (!providers.containsKey(name))
+        {
+            providers.put(name, provider);
+        } else
+        {
+            throw new RuntimeException();
+        }
     }
 }

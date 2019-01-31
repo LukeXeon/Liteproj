@@ -10,11 +10,11 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 
-import org.kexie.android.arch.automatic.internal.EmptyActivityLifecycleCallbacks;
+import org.kexie.android.arch.automatic.app.EmptyActivityLifecycleCallbacks;
 
-public final class Dependencies
+public final class DependenciesManager
 {
-    private Dependencies()
+    private DependenciesManager()
     {
         throw new AssertionError();
     }

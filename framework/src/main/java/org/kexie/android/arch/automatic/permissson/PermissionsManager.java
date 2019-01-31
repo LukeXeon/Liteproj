@@ -9,9 +9,9 @@ import android.support.v4.content.ContextCompat;
 import java.util.ArrayList;
 
 
-public final class Permissions
+public final class PermissionsManager
 {
-    private Permissions()
+    private PermissionsManager()
     {
         throw new AssertionError();
     }

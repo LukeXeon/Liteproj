@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.internal;
+package org.kexie.android.arch.automatic.app;
 
 import android.app.Application;
 import android.content.ContentProvider;
@@ -8,8 +8,8 @@ import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import org.kexie.android.arch.automatic.dependency.Dependencies;
-import org.kexie.android.arch.automatic.permissson.Permissions;
+import org.kexie.android.arch.automatic.dependency.DependenciesManager;
+import org.kexie.android.arch.automatic.permissson.PermissionsManager;
 
 import java.util.Objects;
 
@@ -21,8 +21,8 @@ public final class AutomaticInitializer extends ContentProvider
         Application application = (Application) Objects
                 .requireNonNull(getContext())
                 .getApplicationContext();
-        Permissions.init(application);
-        Dependencies.init(application);
+        PermissionsManager.init(application);
+        DependenciesManager.init(application);
         return true;
     }
 

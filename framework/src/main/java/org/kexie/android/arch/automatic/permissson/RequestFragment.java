@@ -13,7 +13,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 
-import org.kexie.android.arch.automatic.internal.EmptyActivityLifecycleCallbacks;
+import org.kexie.android.arch.automatic.app.EmptyActivityLifecycleCallbacks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -98,9 +98,9 @@ final class RequestFragment
                     list.add(permissions[i]);
                 }
             }
-            if (list.size() != 0 && application instanceof Permissions.Callback)
+            if (list.size() != 0 && application instanceof PermissionsManager.Callback)
             {
-                Permissions.Callback callback = (Permissions.Callback) application;
+                PermissionsManager.Callback callback = (PermissionsManager.Callback) application;
                 callback.onPermissionsDenied(list.toArray(new String[0]));
             }
             FragmentManager fragmentManager = getFragmentManager();

@@ -3,7 +3,7 @@
     <application>
         <provider
             android:authorities="${applicationId}.automatic-initializer"
-            android:name=".automatic.internal.AutomaticInitializer"
+            android:name=".automatic.app.AutomaticInitializer"
             android:exported="false"
             android:multiprocess="true"/>
     </application>

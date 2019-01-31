@@ -1,4 +1,4 @@
-package org.kexie.android.arch.automatic.internal;
+package org.kexie.android.arch.automatic.app;
 
 import android.app.Activity;
 import android.app.Application;
