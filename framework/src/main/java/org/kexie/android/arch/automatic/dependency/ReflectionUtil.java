@@ -366,13 +366,15 @@ final class ReflectionUtil
             throws NoSuchFieldException
     {
         Field field = clazz.getField(name);
-        if (isAssignTo(field.getType(), sClass)
+        if (isAssignTo(sClass, field.getType())
                 && (filter == null || filter.filter(field)))
         {
             return field;
         } else
         {
-            throw new NoSuchFieldException("can't found field name by " + name);
+            throw new NoSuchFieldException("can't found field name by "
+                    + name
+                    + " ,can not cast " + sClass + " to " + field.getType());
         }
     }
 }

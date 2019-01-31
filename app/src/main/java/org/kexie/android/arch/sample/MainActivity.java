@@ -11,18 +11,16 @@ import org.kexie.android.arch.automatic.dependency.Using;
 @Using(R.raw.test_main)
 public class MainActivity extends AppCompatActivity
 {
-
     private static final String TAG = "MainActivity";
 
     @Reference("factory")
-    private Object o;
+    private Bean o;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Logger.d(o+"");
+        Logger.d("" + o + "  " + o.string + "  " + o.object);
     }
-
 }

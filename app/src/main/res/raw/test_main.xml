@@ -1,37 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <scope owner="org.kexie.android.arch.sample.MainActivity">
     <var
-        name="test"
-        class="java.lang.Object"/>
-    <var
-        name="test2"
-        class="java.lang.Object"/>
-    <var
-        name="test3"
-        class="java.lang.Object"/>
-    <var
-        name="test4"
-        class="java.lang.Object"/>
-    <var
-        name="test5"
-        class="java.lang.Object"/>
-    <var
-        name="test6"
-        class="java.lang.Object"/>
-    <var
-        name="test7"
-        class="java.lang.Object"/>
-    <var
-        name="test8"
-        class="java.lang.Object"/>
-    <var
-        name="test9"
-        class="java.lang.Object"/>
+        name="bean"
+        class="org.kexie.android.arch.sample.Bean"
+        provider="singleton"/>
     <var
         name="factory"
-        class="org.kexie.android.arch.sample.Factory">
+        class="org.kexie.android.arch.sample.Factory"
+        provider="factory">
         <new name="test">
             <arg let="@xxxxxxxx"/>
         </new>
+        <field
+            name="field"
+            let="123.1"/>
+        <field
+            name="string"
+            let="@kexie niu bi"/>
+        <property
+            name="Object"
+            ref="bean"/>
     </var>
 </scope>

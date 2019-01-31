@@ -199,7 +199,7 @@ final class DependencyAnalyzer
                     setters.add(doAnalysisField(item, path));
                 } else if (getString(R.string.property_string).equals(name))
                 {
-                    setters.add(doAnalysisProperty(element, path));
+                    setters.add(doAnalysisProperty(item, path));
                 } else
                 {
                     throw AnalyzerUtil.fromMessageThrow(item,
@@ -214,11 +214,11 @@ final class DependencyAnalyzer
                 setters);
     }
 
-    private Setter doAnalysisField(final Element element, Class<?> path)
+    private Setter doAnalysisField(Element element, Class<?> path)
     {
         String name = AnalyzerUtil.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
-        final String refOrLet = getRefOrLetAttr(element);
+        String refOrLet = getRefOrLetAttr(element);
         try
         {
             return ReflectionUtil.newSetter(
@@ -418,7 +418,7 @@ final class DependencyAnalyzer
             return let;
         }
         throw AnalyzerUtil.fromMessageThrow(element,
-                "ref or let illegal");
+                "ref or let illegal ref = " + ref + " let = " + let);
     }
 
     private boolean isSingleton(Element element)
