@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
 import org.kexie.android.arch.automatic.dependency.DependenciesManager;
 import org.kexie.android.arch.automatic.permissson.PermissionsManager;
@@ -15,9 +16,12 @@ import java.util.Objects;
 
 public final class AutomaticInitializer extends ContentProvider
 {
+    private static final String TAG = "AutomaticInitializer";
+
     @Override
     public boolean onCreate()
     {
+        Log.i(TAG, "onCreate: init framework");
         Application application = (Application) Objects
                 .requireNonNull(getContext())
                 .getApplicationContext();

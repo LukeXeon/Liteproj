@@ -6,7 +6,7 @@ import android.support.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 
-public final class DependencyProvider
+final class DependencyProvider
         implements Provider
 {
 
@@ -14,7 +14,7 @@ public final class DependencyProvider
     private final Factory factory;
     private final List<Setter> setters;
 
-    public DependencyProvider(@NonNull DependencyType type,
+    DependencyProvider(@NonNull DependencyType type,
                               @NonNull Factory factory,
                               @Nullable List<Setter> setters)
     {
@@ -40,7 +40,6 @@ public final class DependencyProvider
 
     @Override
     @NonNull
-    @SuppressWarnings("WeakerAccess")
     public DependencyType getType()
     {
         return type;
@@ -48,7 +47,6 @@ public final class DependencyProvider
 
     @Override
     @NonNull
-    @SuppressWarnings({"WeakerAccess"})
     public Class<?> getResultType()
     {
         return factory.getResultType();

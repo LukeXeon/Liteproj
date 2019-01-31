@@ -15,14 +15,14 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-public final class Analyzing
+final class Analyzing
 {
     private Analyzing()
     {
         throw new AssertionError();
     }
 
-    public static final List<Class<?>> SUPPORT_TYPES
+    private static final List<Class<?>> SUPPORT_TYPES
             = Collections.unmodifiableList(new LinkedList<Class<?>>()
     {
         {
@@ -110,8 +110,8 @@ public final class Analyzing
             .compile("[\u4e00-\u9fa5_A-Za-z][\u4e00-\u9fa5_A-Za-z0-9]*");
 
     @Nullable
-    public static String getAttrNoThrow(Element element,
-                                        String attr)
+    static String getAttrNoThrow(Element element,
+                                 String attr)
     {
         if (element.attributeCount() != 0)
         {
@@ -125,8 +125,8 @@ public final class Analyzing
     }
 
     @NonNull
-    public static String getAttrIfEmptyThrow(Element element,
-                                             String attr)
+    static String getAttrIfEmptyThrow(Element element,
+                                      String attr)
     {
         String name = getAttrNoThrow(element, attr);
         if (!TextUtils.isEmpty(name))
@@ -136,19 +136,19 @@ public final class Analyzing
         throw fromMessageThrow(element, "attr " + attr + " no found");
     }
 
-    public static RuntimeException
+    static RuntimeException
     fromMessageThrow(Element element, String massage)
     {
         return new GenerateDepartmentException(element, massage);
     }
 
-    public static RuntimeException
+    static RuntimeException
     formExceptionThrow(Element element, Throwable e)
     {
         return new GenerateDepartmentException(element, e);
     }
 
-    public static NameType getNameType(String text)
+    static NameType getNameType(String text)
     {
         if (TextUtils.isEmpty(text))
         {
@@ -171,24 +171,24 @@ public final class Analyzing
         }
     }
 
-    public static boolean isEmptyList(List<?> list)
+    static boolean isEmptyList(List<?> list)
     {
         return list == null || list.size() == 0;
     }
 
-    public static boolean checkSupportTypeCompat(Class<?> type)
+    static void checkSupportTypeCompat(Class<?> type)
     {
         for (Class<?> clazz : SUPPORT_TYPES)
         {
             if (clazz.isAssignableFrom(type))
             {
-                return true;
+                return;
             }
         }
         throw new IllegalStateException("no support type " + type);
     }
 
-    public static boolean equalsToSupportTypes(Class<?> clazz)
+    static boolean equalsToSupportTypes(Class<?> clazz)
     {
         for (Class<?> type : SUPPORT_TYPES)
         {
@@ -200,7 +200,7 @@ public final class Analyzing
         return false;
     }
 
-    public static Provider
+    static Provider
     newConstantProvider(String let)
             throws GenerateDepartmentException
     {

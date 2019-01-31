@@ -7,7 +7,7 @@ public final class OwnerProxyProvider
 {
     private final Class<?> ownerType;
 
-    public OwnerProxyProvider(Class<?> ownerType)
+    OwnerProxyProvider(Class<?> ownerType)
     {
         this.ownerType = ownerType;
     }

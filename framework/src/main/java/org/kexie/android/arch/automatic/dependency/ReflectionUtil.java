@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public final class ReflectionUtil
+final class ReflectionUtil
 {
     private ReflectionUtil()
     {
@@ -112,7 +112,7 @@ public final class ReflectionUtil
     }
 
     @SuppressWarnings("unchecked")
-    public static Object castTo(Object obj, Class<?> targetClass)
+    private static Object castTo(Object obj, Class<?> targetClass)
     {
         //处理引用类型和可赋值类型
         Class<?> objClass = obj.getClass();
@@ -149,7 +149,7 @@ public final class ReflectionUtil
         return args;
     }
 
-    public static Setter newSetter(final Method method, final String name)
+    static Setter newSetter(final Method method, final String name)
     {
         return new Setter()
         {
@@ -159,7 +159,8 @@ public final class ReflectionUtil
                 try
                 {
                     method.setAccessible(true);
-                    method.invoke(target, dependency.get(name));
+                    method.invoke(target, castTo(dependency.get(name),
+                            method.getParameterTypes()[0]));
                 } catch (Exception e)
                 {
                     throw new RuntimeException(e);
@@ -168,7 +169,7 @@ public final class ReflectionUtil
         };
     }
 
-    public static Setter newSetter(final Field field, final String name)
+    static Setter newSetter(final Field field, final String name)
     {
         return new Setter()
         {
@@ -178,7 +179,8 @@ public final class ReflectionUtil
                 field.setAccessible(true);
                 try
                 {
-                    field.set(target, dependency.get(name));
+                    field.set(target, castTo(dependency.get(name),
+                            field.getType()));
                 } catch (Exception e)
                 {
                     throw new RuntimeException(e);
@@ -188,8 +190,8 @@ public final class ReflectionUtil
     }
 
     @SuppressWarnings("unchecked")
-    public static Factory newFactory(final Method method,
-                                     final List<String> references)
+    static Factory newFactory(final Method method,
+                              final List<String> references)
     {
         return new Factory()
         {
@@ -220,8 +222,8 @@ public final class ReflectionUtil
     }
 
     @SuppressWarnings("unchecked")
-    public static Factory newFactory(final Constructor<?> constructor,
-                                     final List<String> references)
+    static Factory newFactory(final Constructor<?> constructor,
+                              final List<String> references)
     {
         return new Factory()
         {
@@ -254,7 +256,7 @@ public final class ReflectionUtil
     }
 
     @SuppressWarnings("unchecked")
-    public static Factory newConstantFactory(Object object)
+    static Factory newConstantFactory(Object object)
     {
         final Object notNull = Objects.requireNonNull(object);
         return new Factory()
@@ -274,7 +276,7 @@ public final class ReflectionUtil
         };
     }
 
-    public static Method
+    static Method
     findSupportMethod(Class<?> clazz,
                       String name,
                       Class<?>[] classes,
@@ -313,7 +315,7 @@ public final class ReflectionUtil
         throw new NoSuchMethodException("name by " + name);
     }
 
-    public static Constructor<?>
+    static Constructor<?>
     findSupportConstructor(Class<?> clazz,
                            Class<?>[] classes,
                            Filter<Constructor<?>> filter)
@@ -350,7 +352,7 @@ public final class ReflectionUtil
         throw new NoSuchMethodException("no constructor match");
     }
 
-    public static Field
+    static Field
     findSupportField(Class<?> clazz,
                      String name,
                      Filter<Field> filter)

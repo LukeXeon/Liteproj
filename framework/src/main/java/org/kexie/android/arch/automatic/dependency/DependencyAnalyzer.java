@@ -26,7 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-public final class DependencyAnalyzer
+final class DependencyAnalyzer
         extends ContextWrapper
 {
     private final static SAXReader SAX_READER
@@ -40,7 +40,8 @@ public final class DependencyAnalyzer
     @SuppressWarnings("WeakerAccess")
     public static Dependency analysis(Object owner, Context context)
     {
-        int[] resIds = getResIds(owner);
+        Using using = owner.getClass().getAnnotation(Using.class);
+        int[] resIds = using == null ? null : using.value();
         if (resIds == null)
         {
             return null;
@@ -62,13 +63,6 @@ public final class DependencyAnalyzer
             list.add(relation);
         }
         return Dependency.newInstance(owner, list);
-    }
-
-    @Nullable
-    private static int[] getResIds(Object owner)
-    {
-        Using using = owner.getClass().getAnnotation(Using.class);
-        return using == null ? null : using.value();
     }
 
     private final Provider owner;
@@ -381,7 +375,7 @@ public final class DependencyAnalyzer
         } else
         {
             throw new GenerateDepartmentException(
-                    "providers no has name=" + name
+                    "providers no has name = " + name
             );
         }
     }

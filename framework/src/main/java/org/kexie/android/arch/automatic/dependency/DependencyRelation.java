@@ -8,13 +8,13 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-public final class DependencyRelation
+final class DependencyRelation
 {
     private final Class<?> ownerType;
     private final Map<String, Provider> providers;
 
-    public DependencyRelation(@NonNull Class<?> ownerType,
-                              @Nullable Map<String, Provider> providers)
+    DependencyRelation(@NonNull Class<?> ownerType,
+                       @Nullable Map<String, Provider> providers)
     {
         this.ownerType = ownerType;
         if (providers == null)
@@ -27,18 +27,18 @@ public final class DependencyRelation
         }
     }
 
-    public Set<String> nameSet()
+    Set<String> nameSet()
     {
         return new ArraySet<>(providers.keySet());
     }
 
-    public Class<?> getOwnerType()
+    Class<?> getOwnerType()
     {
         return ownerType;
     }
 
     @Nullable
-    public Provider getProvider(String name)
+    Provider getProvider(String name)
     {
         return providers.get(name);
     }

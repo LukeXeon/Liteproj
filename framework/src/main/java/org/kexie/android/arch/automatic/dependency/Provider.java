@@ -2,7 +2,7 @@ package org.kexie.android.arch.automatic.dependency;
 
 import android.support.annotation.NonNull;
 
-public interface Provider extends Factory
+interface Provider extends Factory
 {
     @NonNull
     @SuppressWarnings({"unchecked", "WeakerAccess"})

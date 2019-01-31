@@ -5,7 +5,7 @@ package org.kexie.android.arch.automatic.dependency;
  */
 
 
-public interface Filter<T>
+interface Filter<T>
 {
     boolean filter(T item);
 }

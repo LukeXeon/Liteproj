@@ -1,6 +1,6 @@
 package org.kexie.android.arch.automatic.dependency;
 
-public enum NameType
+enum NameType
 {
     Illegal,
     Constant,

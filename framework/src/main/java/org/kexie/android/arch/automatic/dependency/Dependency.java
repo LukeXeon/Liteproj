@@ -16,6 +16,7 @@ import java.util.Set;
 
 public final class Dependency
 {
+    @SuppressWarnings({"WeakerAccess"})
     public final static String OWNER = "owner";
 
     private final Class<?> ownerType;
@@ -25,8 +26,8 @@ public final class Dependency
     private final Map<String, Object> singletons
             = new ArrayMap<>();
 
-    public static Dependency newInstance(@NonNull Object owner,
-                                         @NonNull List<DependencyRelation> relations)
+    static Dependency newInstance(@NonNull Object owner,
+                                  @NonNull List<DependencyRelation> relations)
     {
         if (relations.size() > 1)
         {
@@ -50,9 +51,8 @@ public final class Dependency
         return new Dependency(owner, relations);
     }
 
-    @SuppressWarnings({"unchecked"})
     private Dependency(@NonNull Object owner,
-                          @NonNull List<DependencyRelation> relations)
+                       @NonNull List<DependencyRelation> relations)
     {
         this.ownerType = owner.getClass();
         Analyzing.checkSupportTypeCompat(ownerType);
@@ -109,12 +109,12 @@ public final class Dependency
     }
 
     @NonNull
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"unchecked", "WeakerAccess"})
     public <T> T get(String name)
     {
         if (OWNER.equals(name))
         {
-            return (T)getOwner();
+            return (T) getOwner();
         }
         for (DependencyRelation relation : dependencies.keySet())
         {
@@ -127,7 +127,7 @@ public final class Dependency
                     if (singleton == null)
                     {
                         singleton = provider.newInstance(dependencies.get(relation));
-                        singletons.put(name,singleton);
+                        singletons.put(name, singleton);
                     }
                     return (T) singleton;
                 }
@@ -138,7 +138,7 @@ public final class Dependency
     }
 
     @NonNull
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"WeakerAccess"})
     public Class<?> getResultType(String name)
     {
         if (OWNER.equals(name))
@@ -157,7 +157,7 @@ public final class Dependency
     }
 
     @NonNull
-    @SuppressWarnings({"unchecked"})
+    @SuppressWarnings({"WeakerAccess"})
     public DependencyType getDependencyType(String name)
     {
         if (OWNER.equals(name))
