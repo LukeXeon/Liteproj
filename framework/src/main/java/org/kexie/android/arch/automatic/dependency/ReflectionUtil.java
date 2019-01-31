@@ -195,6 +195,7 @@ final class ReflectionUtil
     {
         return new Factory()
         {
+            @NonNull
             @Override
             public <T> T newInstance(Dependency dependency)
             {
@@ -213,6 +214,7 @@ final class ReflectionUtil
                 }
             }
 
+            @NonNull
             @Override
             public Class<?> getResultType()
             {
@@ -227,6 +229,7 @@ final class ReflectionUtil
     {
         return new Factory()
         {
+            @NonNull
             @Override
             public <T> T newInstance(Dependency dependency)
             {
@@ -246,6 +249,7 @@ final class ReflectionUtil
                 }
             }
 
+            @NonNull
             @Override
             public Class<?> getResultType()
             {
@@ -261,12 +265,14 @@ final class ReflectionUtil
         final Object notNull = Objects.requireNonNull(object);
         return new Factory()
         {
+            @NonNull
             @Override
             public <T> T newInstance(Dependency dependency)
             {
                 return (T) notNull;
             }
 
+            @NonNull
             @Override
             public Class<?> getResultType()
             {
@@ -279,11 +285,11 @@ final class ReflectionUtil
     static Method
     findSupportMethod(Class<?> clazz,
                       String name,
-                      Class<?>[] classes,
+                      Class<?>[] targetClasses,
                       Filter<Method> filter)
             throws NoSuchMethodException
     {
-        if (classes == null)
+        if (targetClasses == null)
         {
             return clazz.getMethod(name);
         }
@@ -292,12 +298,12 @@ final class ReflectionUtil
             boolean match = true;
             Class<?>[] pram = method.getParameterTypes();
             if (method.getName().equals(name)
-                    && pram.length == classes.length
+                    && pram.length == targetClasses.length
                     && (filter == null || filter.filter(method)))
             {
                 for (int i = 0; i < pram.length; i++)
                 {
-                    if (!isAssignTo(classes[i], pram[i]))
+                    if (!isAssignTo(targetClasses[i], pram[i]))
                     {
                         match = false;
                         break;
@@ -317,11 +323,11 @@ final class ReflectionUtil
 
     static Constructor<?>
     findSupportConstructor(Class<?> clazz,
-                           Class<?>[] classes,
+                           Class<?>[] targetClasses,
                            Filter<Constructor<?>> filter)
             throws NoSuchMethodException
     {
-        if (classes == null)
+        if (targetClasses == null)
         {
             return clazz.getConstructor();
         }
@@ -329,12 +335,12 @@ final class ReflectionUtil
         {
             boolean match = true;
             Class<?>[] pram = constructor.getParameterTypes();
-            if (pram.length == classes.length
+            if (pram.length == targetClasses.length
                     && (filter == null || filter.filter(constructor)))
             {
                 for (int i = 0; i < pram.length; i++)
                 {
-                    if (!isAssignTo(classes[i], pram[i]))
+                    if (!isAssignTo(targetClasses[i], pram[i]))
                     {
                         match = false;
                         break;
@@ -355,11 +361,13 @@ final class ReflectionUtil
     static Field
     findSupportField(Class<?> clazz,
                      String name,
+                     Class<?> targetClass,
                      Filter<Field> filter)
             throws NoSuchFieldException
     {
         Field field = clazz.getField(name);
-        if (filter == null || filter.filter(field))
+        if (isAssignTo(field.getType(), targetClass)
+                && (filter == null || filter.filter(field)))
         {
             return field;
         } else

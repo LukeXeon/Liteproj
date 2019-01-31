@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,7 +36,6 @@ final class DependencyAnalyzer
 
     //返回Dependency
     @Nullable
-    @SuppressWarnings("WeakerAccess")
     public static Dependency analysis(Object owner, Context context)
     {
         Using using = owner.getClass().getAnnotation(Using.class);
@@ -46,7 +44,7 @@ final class DependencyAnalyzer
         {
             return null;
         }
-        List<DependencyRelation> list = new ArrayList<>();
+        List<DependencyRelation> list = new LinkedList<>();
         for (int resId : resIds)
         {
             DependencyRelation relation = CACHE.get(resId);
@@ -97,6 +95,7 @@ final class DependencyAnalyzer
     }
 
     private void addProvider(String name, Provider provider)
+            throws ProviderAlreadyExistsException
     {
         if (!getString(R.string.owner_string).equals(name)
                 && !providers.containsKey(name))
@@ -104,7 +103,7 @@ final class DependencyAnalyzer
             providers.put(name, provider);
         } else
         {
-            throw new RuntimeException();
+            throw new ProviderAlreadyExistsException(name);
         }
     }
 
@@ -118,21 +117,30 @@ final class DependencyAnalyzer
         {
             if (getString(R.string.var_string).equals(element.getName()))
             {
-                addProvider(Analyzing.getAttrIfEmptyThrow(element,
-                        getString(R.string.name_string)),
-                        doAnalysisVar(element));
+                try
+                {
+                    addProvider(AnalyzerUtil.getAttrIfEmptyThrow(element,
+                            getString(R.string.name_string)),
+                            doAnalysisVar(element));
+                } catch (ProviderAlreadyExistsException e)
+                {
+                    throw AnalyzerUtil.formExceptionThrow(element, e);
+                }
             } else
             {
-                throw Analyzing.fromMessageThrow(element,
+                throw AnalyzerUtil.fromMessageThrow(element,
                         "no found 'var' tag");
             }
         }
-        return new DependencyRelation(owner.getResultType(), providers);
+        return new DependencyRelation(getProvider(
+                getString(R.string.owner_string))
+                .getResultType(),
+                providers);
     }
 
     private Provider doAnalysisVar(Element element)
     {
-        String let = Analyzing.getAttrNoThrow(element,
+        String let = AnalyzerUtil.getAttrNoThrow(element,
                 getString(R.string.let_string));
         if (let != null)
         {
@@ -145,26 +153,27 @@ final class DependencyAnalyzer
 
     private Provider doAnalysisLetVar(Element element)
     {
-        String let = Analyzing.getAttrIfEmptyThrow(element,
+        String let = AnalyzerUtil.getAttrIfEmptyThrow(element,
                 getString(R.string.let_string));
-        if (NameType.Constant.equals(Analyzing.getNameType(let)))
+        if (NameType.Constant.equals(AnalyzerUtil.getNameType(let)))
         {
             Provider provider = getProvider(let);
             if (provider == null)
             {
                 try
                 {
-                    provider = Analyzing.newConstantProvider(let);
+                    provider = AnalyzerUtil.newConstantProvider(let);
                     addProvider(let, provider);
-                } catch (GenerateDepartmentException e)
+                } catch (IllegalFormatTextException
+                        | ProviderAlreadyExistsException e)
                 {
-                    throw Analyzing.formExceptionThrow(element, e);
+                    throw AnalyzerUtil.formExceptionThrow(element, e);
                 }
             }
             return provider;
         } else
         {
-            throw Analyzing.fromMessageThrow(element,
+            throw AnalyzerUtil.fromMessageThrow(element,
                     "illegal name " + let);
         }
     }
@@ -173,18 +182,18 @@ final class DependencyAnalyzer
     private Provider doAnalysisNormalVar(Element element)
     {
         Class<?> path = getClassAttr(element);
-        boolean isSingleton = isSingleton(element);
         List<Element> elements = element.elements();
         List<Setter> setters = new LinkedList<>();
-        Factory factory = doAnalysisNew(element, path);
+        Factory factory = doFindNew(element, path);
         path = factory.getResultType();
-        if (!Analyzing.isEmptyList(elements))
+        if (!AnalyzerUtil.isEmptyList(elements))
         {
             for (Element item : elements)
             {
                 String name = item.getName();
                 if (getString(R.string.new_string).equals(name))
                 {
+                    //ignore
                 } else if (getString(R.string.field_string).equals(name))
                 {
                     setters.add(doAnalysisField(item, path));
@@ -193,21 +202,21 @@ final class DependencyAnalyzer
                     setters.add(doAnalysisProperty(element, path));
                 } else
                 {
-                    throw Analyzing.fromMessageThrow(item,
+                    throw AnalyzerUtil.fromMessageThrow(item,
                             "error token");
                 }
             }
         }
-        return new DependencyProvider(isSingleton
+        return new DependencyProvider(isSingleton(element)
                 ? DependencyType.Singleton
                 : DependencyType.Factory,
                 factory,
                 setters);
     }
 
-    private Setter doAnalysisField(Element element, Class<?> path)
+    private Setter doAnalysisField(final Element element, Class<?> path)
     {
-        String name = Analyzing.getAttrIfEmptyThrow(element,
+        String name = AnalyzerUtil.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         final String refOrLet = getRefOrLetAttr(element);
         try
@@ -216,27 +225,25 @@ final class DependencyAnalyzer
                     ReflectionUtil.findSupportField(
                             path,
                             name,
+                            getProviderResultTypeIfNullThrow(refOrLet),
                             new Filter<Field>()
                             {
                                 @Override
                                 public boolean filter(Field item)
                                 {
-                                    return ReflectionUtil.isAssignTo(
-                                            getProviderClassIfNullThrow(refOrLet),
-                                            item.getType()
-                                    ) && !Modifier.isFinal(item.getModifiers())
+                                    return !Modifier.isFinal(item.getModifiers())
                                             && !Modifier.isStatic(item.getModifiers());
                                 }
                             }), refOrLet);
-        } catch (NoSuchFieldException e)
+        } catch (NoSuchFieldException | IllegalFormatTextException e)
         {
-            throw Analyzing.formExceptionThrow(element, e);
+            throw AnalyzerUtil.formExceptionThrow(element, e);
         }
     }
 
     private Setter doAnalysisProperty(Element element, Class<?> path)
     {
-        String name = Analyzing.getAttrIfEmptyThrow(element,
+        String name = AnalyzerUtil.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         String refOrLet = getRefOrLetAttr(element);
         try
@@ -245,7 +252,7 @@ final class DependencyAnalyzer
                     ReflectionUtil.findSupportMethod(path, "set"
                                     + Character.toUpperCase(name.charAt(0))
                                     + name.substring(1, name.length()),
-                            new Class<?>[]{getProviderClassIfNullThrow(refOrLet)},
+                            new Class<?>[]{getProviderResultTypeIfNullThrow(refOrLet)},
                             new Filter<Method>()
                             {
                                 @Override
@@ -255,29 +262,28 @@ final class DependencyAnalyzer
                                             && !Modifier.isStatic(item.getModifiers());
                                 }
                             }), refOrLet);
-        } catch (NoSuchMethodException e)
+        } catch (NoSuchMethodException | IllegalFormatTextException e)
         {
-            throw Analyzing.formExceptionThrow(element, e);
+            throw AnalyzerUtil.formExceptionThrow(element, e);
         }
     }
 
-    private Factory doAnalysisNew(Element element, Class<?> path)
+    private Factory doFindNew(Element element, Class<?> path)
     {
         List<Element> elements = element.elements();
         Factory factory = null;
-        if (Analyzing.isEmptyList(elements))
+        if (AnalyzerUtil.isEmptyList(elements))
         {
             for (Element item : elements)
             {
-                if (getString(R.string.new_string)
-                        .equals(item.getName()))
+                if (getString(R.string.new_string).equals(item.getName()))
                 {
                     if (factory == null)
                     {
-                        factory = doAnalysisNew0(item, path);
+                        factory = doAnalysisNew(item, path);
                     } else
                     {
-                        throw Analyzing.fromMessageThrow(item,
+                        throw AnalyzerUtil.fromMessageThrow(item,
                                 "'new' must only one");
                     }
                 }
@@ -294,15 +300,15 @@ final class DependencyAnalyzer
                     : factory;
         } catch (NoSuchMethodException e)
         {
-            throw Analyzing.formExceptionThrow(element, e);
+            throw AnalyzerUtil.formExceptionThrow(element, e);
         }
     }
 
-    private Factory doAnalysisNew0(Element element, Class<?> path)
+    private Factory doAnalysisNew(Element element, Class<?> path)
     {
         List<Element> elements = element.elements();
         List<String> refOrLet = new LinkedList<>();
-        if (Analyzing.isEmptyList(elements))
+        if (AnalyzerUtil.isEmptyList(elements))
         {
             for (Element item : elements)
             {
@@ -311,7 +317,7 @@ final class DependencyAnalyzer
                     refOrLet.add(getRefOrLetAttr(item));
                 } else
                 {
-                    throw Analyzing.fromMessageThrow(item,
+                    throw AnalyzerUtil.fromMessageThrow(item,
                             "'arg' no found");
                 }
             }
@@ -321,13 +327,13 @@ final class DependencyAnalyzer
         {
             try
             {
-                classes[i] = getProviderClassIfNullThrow(refOrLet.get(i));
-            } catch (GenerateDepartmentException e)
+                classes[i] = getProviderResultTypeIfNullThrow(refOrLet.get(i));
+            } catch (IllegalFormatTextException e)
             {
-                throw Analyzing.formExceptionThrow(element, e);
+                throw AnalyzerUtil.formExceptionThrow(element, e);
             }
         }
-        String isCustom = Analyzing.getAttrNoThrow(element,
+        String isCustom = AnalyzerUtil.getAttrNoThrow(element,
                 getString(R.string.name_string));
         isCustom = isCustom != null
                 && !getString(R.string.new_normal_string).equals(isCustom)
@@ -361,12 +367,12 @@ final class DependencyAnalyzer
             }
         } catch (NoSuchMethodException e)
         {
-            throw Analyzing.formExceptionThrow(element, e);
+            throw AnalyzerUtil.formExceptionThrow(element, e);
         }
     }
 
-    private Class<?> getProviderClassIfNullThrow(String name)
-            throws GenerateDepartmentException
+    private Class<?> getProviderResultTypeIfNullThrow(String name)
+            throws IllegalFormatTextException
     {
         Provider provider = providers.get(name);
         if (provider != null)
@@ -374,7 +380,7 @@ final class DependencyAnalyzer
             return provider.getResultType();
         } else
         {
-            throw new GenerateDepartmentException(
+            throw new IllegalFormatTextException(
                     "providers no has name = " + name
             );
         }
@@ -382,14 +388,14 @@ final class DependencyAnalyzer
 
     private String getRefOrLetAttr(Element element)
     {
-        String ref = Analyzing.getAttrNoThrow(element,
+        String ref = AnalyzerUtil.getAttrNoThrow(element,
                 getString(R.string.ref_string));
-        String let = Analyzing.getAttrNoThrow(element,
+        String let = AnalyzerUtil.getAttrNoThrow(element,
                 getString(R.string.let_string));
         if (ref != null)
         {
             if (NameType.Reference.equals(
-                    Analyzing.getNameType(ref)))
+                    AnalyzerUtil.getNameType(ref)))
             {
                 return ref;
             }
@@ -398,18 +404,31 @@ final class DependencyAnalyzer
             Provider provider = getProvider(let);
             if (provider != null)
             {
-                provider = Analyzing.newConstantProvider(let);
-                addProvider(let, provider);
+
+                try
+                {
+                    provider = AnalyzerUtil.newConstantProvider(let);
+                } catch (IllegalFormatTextException e)
+                {
+                    throw AnalyzerUtil.formExceptionThrow(element, e);
+                }
+                try
+                {
+                    addProvider(let, provider);
+                } catch (ProviderAlreadyExistsException e)
+                {
+                    throw AnalyzerUtil.formExceptionThrow(element,e);
+                }
             }
             return let;
         }
-        throw Analyzing.fromMessageThrow(element,
+        throw AnalyzerUtil.fromMessageThrow(element,
                 "ref or let illegal");
     }
 
     private boolean isSingleton(Element element)
     {
-        String provider = Analyzing.getAttrNoThrow(element,
+        String provider = AnalyzerUtil.getAttrNoThrow(element,
                 getString(R.string.provider_string));
         if (TextUtils.isEmpty(provider))
         {
@@ -423,8 +442,8 @@ final class DependencyAnalyzer
             return false;
         } else
         {
-            throw Analyzing.fromMessageThrow(element,
-                    "illegal provider=" + provider);
+            throw AnalyzerUtil.fromMessageThrow(element,
+                    "illegal provider = " + provider);
         }
     }
 
@@ -432,34 +451,33 @@ final class DependencyAnalyzer
     {
         try
         {
-            return Class.forName(Analyzing.getAttrIfEmptyThrow(
+            return Class.forName(AnalyzerUtil.getAttrIfEmptyThrow(
                     element,
                     getString(R.string.class_string)
             ));
         } catch (ClassNotFoundException e)
         {
-            throw Analyzing.formExceptionThrow(element, e);
+            throw AnalyzerUtil.formExceptionThrow(element, e);
         }
     }
 
     private void checkOwnerType(Element root)
     {
-        if (getString(R.string.scope_string)
-                .equals(root.getName()))
+        if (getString(R.string.scope_string).equals(root.getName()))
         {
             try
             {
-                if (!Class.forName(Analyzing.getAttrIfEmptyThrow(root,
+                if (!Class.forName(AnalyzerUtil.getAttrIfEmptyThrow(root,
                         getString(R.string.owner_string)))
                         .equals(getProvider(getString(R.string.owner_string))
                                 .getResultType()))
                 {
-                    throw Analyzing.fromMessageThrow(root,
+                    throw AnalyzerUtil.fromMessageThrow(root,
                             "owner type not match");
                 }
             } catch (ClassNotFoundException e)
             {
-                throw Analyzing.formExceptionThrow(root, e);
+                throw AnalyzerUtil.formExceptionThrow(root, e);
             }
         }
     }

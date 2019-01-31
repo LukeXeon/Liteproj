@@ -32,5 +32,4 @@ public final class ViewPagerBindingAdapter
         }
         adapter.setNewData(dataSource);
     }
-
 }

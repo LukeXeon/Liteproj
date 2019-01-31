@@ -15,9 +15,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-final class Analyzing
+final class AnalyzerUtil
 {
-    private Analyzing()
+    private AnalyzerUtil()
     {
         throw new AssertionError();
     }
@@ -202,7 +202,7 @@ final class Analyzing
 
     static Provider
     newConstantProvider(String let)
-            throws GenerateDepartmentException
+            throws IllegalFormatTextException
     {
         String value = let.substring(1, let.length());
         if (let.charAt(0) == '@')
@@ -230,7 +230,7 @@ final class Analyzing
 
                 }
             }
-            throw new GenerateDepartmentException("no type match to let =" + let);
+            throw new IllegalFormatTextException("no type match to let = " + let);
         }
     }
 }

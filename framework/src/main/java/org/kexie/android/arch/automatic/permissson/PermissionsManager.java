@@ -18,13 +18,13 @@ public final class PermissionsManager
 
     private final static String[] EMPTY_STRING_ARRAY = new String[0];
 
-
     public interface Callback
     {
         void onPermissionsDenied(@NonNull String[] permissions);
     }
 
     @NonNull
+    @SuppressWarnings({"WeakerAccess"})
     public static String[] getDefinedPermissions(Application application)
     {
         try
@@ -46,6 +46,7 @@ public final class PermissionsManager
     }
 
     @NonNull
+    @SuppressWarnings({"WeakerAccess"})
     public static String[] getDeniedPermissions(Application application)
     {
         String[] requestedPermissions = getDefinedPermissions(application);

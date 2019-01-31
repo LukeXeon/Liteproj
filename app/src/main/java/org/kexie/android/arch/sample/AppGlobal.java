@@ -1,4 +1,4 @@
-package org.kexie.android.arch;
+package org.kexie.android.arch.sample;
 
 import android.app.Application;
 import android.util.Log;

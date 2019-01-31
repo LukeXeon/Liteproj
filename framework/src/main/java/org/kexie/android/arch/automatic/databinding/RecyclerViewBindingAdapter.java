@@ -17,21 +17,6 @@ public final class RecyclerViewBindingAdapter
     }
 
     @SuppressWarnings("unchecked")
-    public static void setDataSource(RecyclerView view, List<?> data)
-    {
-        GenericRecyclerAdapter adapter
-                = (GenericRecyclerAdapter) view.getAdapter();
-        if (adapter == null)
-        {
-            Log.e(RecyclerView.class.getSimpleName(),
-                    "no has adapter to bind "
-                            + Arrays.toString(data.toArray()));
-            return;
-        }
-        adapter.setNewData(data);
-    }
-
-    @SuppressWarnings("unchecked")
     @BindingAdapter({"app:itemName",
             "app:itemLayout",
             "app:dataSource"})

@@ -96,7 +96,7 @@ public final class DependenciesManager
             return;
         }
         Class<?> type = object.getClass();
-        while (type != null && !Analyzing.equalsToSupportTypes(type))
+        while (type != null && !AnalyzerUtil.equalsToSupportTypes(type))
         {
             for (Field field : type.getDeclaredFields())
             {

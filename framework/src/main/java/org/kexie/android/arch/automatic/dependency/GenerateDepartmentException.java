@@ -18,9 +18,4 @@ final class GenerateDepartmentException
     {
         super("in [" + element.toString() + "] : " + message);
     }
-
-    GenerateDepartmentException(String message)
-    {
-        super(message);
-    }
 }
