@@ -4,7 +4,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
 
-abstract class EmptyActivityLifecycleCallbacks
+public abstract class EmptyActivityLifecycleCallbacks
         implements Application.ActivityLifecycleCallbacks
 {
     @Override

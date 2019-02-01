@@ -2,12 +2,12 @@ package org.kexie.android.arch.ioc;
 
 import android.support.annotation.NonNull;
 
-final class OwnerProxyProvider
+final class OwnerSubstituteProvider
     implements Provider
 {
     private final Class<?> ownerType;
 
-    OwnerProxyProvider(Class<?> ownerType)
+    OwnerSubstituteProvider(Class<?> ownerType)
     {
         this.ownerType = ownerType;
     }

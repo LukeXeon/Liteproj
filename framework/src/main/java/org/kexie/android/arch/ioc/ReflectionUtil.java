@@ -18,6 +18,11 @@ final class ReflectionUtil
         throw new AssertionError();
     }
 
+    private interface CastOf<T>
+    {
+        Object cast(T obj);
+    }
+
     private final static Map<Class<?>, Map<Class<?>, CastOf>> CAST_OF
             = Collections.unmodifiableMap(
             new ArrayMap<Class<?>, Map<Class<?>, CastOf>>()

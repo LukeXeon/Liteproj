@@ -41,6 +41,12 @@ public final class DependenciesManager
 
     static void init(Application application)
     {
+        initLifecycleCallbacks(application);
+        injectToApplication(application);
+    }
+
+    private synchronized static void initLifecycleCallbacks(Application application)
+    {
         final FragmentManager.FragmentLifecycleCallbacks
                 fragmentLifecycleCallbacks
                 = new FragmentManager.FragmentLifecycleCallbacks()
@@ -58,7 +64,10 @@ public final class DependenciesManager
                             this,
                             false
                     );
-                    HolderFragment.prepareInject(fragmentManager);
+                    if (AnalyzerUtil.getResIds(fragment) != null)
+                    {
+                        HolderFragment.prepareInject(fragmentManager);
+                    }
                 }
             }
         };
@@ -81,14 +90,24 @@ public final class DependenciesManager
                                     fragmentLifecycleCallbacks,
                                     false
                             );
-                            HolderFragment.prepareInject(fragmentManager);
+                            if (AnalyzerUtil.getResIds(appCompatActivity) != null)
+                            {
+                                HolderFragment.prepareInject(fragmentManager);
+                            }
                         }
                     }
                 });
-        appGlobal = DependencyAnalyzer.analysis(application, application);
-        if (appGlobal != null)
+    }
+
+    private synchronized static void injectToApplication(Application application)
+    {
+        if (appGlobal == null)
         {
-            inject(application, appGlobal);
+            appGlobal = DependencyAnalyzer.analysis(application, application);
+            if (appGlobal != null)
+            {
+                inject(application, appGlobal);
+            }
         }
     }
 

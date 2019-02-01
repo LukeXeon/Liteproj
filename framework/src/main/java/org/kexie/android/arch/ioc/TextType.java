@@ -1,6 +1,6 @@
 package org.kexie.android.arch.ioc;
 
-enum NameType
+enum TextType
 {
     Illegal,
     Constant,

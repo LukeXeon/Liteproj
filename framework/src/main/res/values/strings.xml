@@ -1,4 +1,5 @@
 <resources>
+    <item type="id" name="dependency_prepare"/>
     <string name="app_name">keixe android arch</string>
     <string name="owner_string">owner</string>
     <string name="field_string">field</string>

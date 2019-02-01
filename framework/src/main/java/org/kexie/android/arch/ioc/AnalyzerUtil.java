@@ -22,6 +22,11 @@ final class AnalyzerUtil
         throw new AssertionError();
     }
 
+    private interface ValueOf
+    {
+        Object valueOf(String value);
+    }
+
     private static final List<Class<?>> SUPPORT_TYPES
             = Collections.unmodifiableList(new LinkedList<Class<?>>()
     {
@@ -148,25 +153,25 @@ final class AnalyzerUtil
         return new GenerateDepartmentException(element, e);
     }
 
-    static NameType getNameType(String text)
+    static TextType getNameType(String text)
     {
         if (TextUtils.isEmpty(text))
         {
-            return NameType.Illegal;
+            return TextType.Illegal;
         } else
         {
             if ((text.charAt(0) == '@')
                     && !TextUtils.isEmpty(text.substring(1, text.length())))
             {
-                return NameType.Constant;
+                return TextType.Constant;
             } else if (NAME_PATTERN
                     .matcher(text)
                     .matches())
             {
-                return NameType.Reference;
+                return TextType.Reference;
             } else
             {
-                return NameType.Illegal;
+                return TextType.Illegal;
             }
         }
     }
@@ -201,7 +206,7 @@ final class AnalyzerUtil
     }
 
     static Provider
-    newConstantProvider(String let)
+    createConstantProvider(String let)
             throws IllegalFormatTextException
     {
         String value = let.substring(1, let.length());
@@ -232,5 +237,11 @@ final class AnalyzerUtil
             }
             throw new IllegalFormatTextException("no type match to let = " + let);
         }
+    }
+
+    static int[] getResIds(Object owner)
+    {
+        Using using = owner.getClass().getAnnotation(Using.class);
+        return using == null ? null : using.value();
     }
 }

@@ -37,8 +37,7 @@ final class DependencyAnalyzer
     @Nullable
     public static Dependency analysis(Object owner, Context context)
     {
-        Using using = owner.getClass().getAnnotation(Using.class);
-        int[] resIds = using == null ? null : using.value();
+        int[] resIds = AnalyzerUtil.getResIds(owner);
         if (resIds == null)
         {
             return null;
@@ -70,7 +69,7 @@ final class DependencyAnalyzer
                                Class<?> ownerType)
     {
         super(context.getApplicationContext());
-        this.owner = new OwnerProxyProvider(ownerType);
+        this.owner = new OwnerSubstituteProvider(ownerType);
     }
 
     private Document getDocument(@RawRes int rawXml)
@@ -154,14 +153,14 @@ final class DependencyAnalyzer
     {
         String let = AnalyzerUtil.getAttrIfEmptyThrow(element,
                 getString(R.string.let_string));
-        if (NameType.Constant.equals(AnalyzerUtil.getNameType(let)))
+        if (TextType.Constant.equals(AnalyzerUtil.getNameType(let)))
         {
             Provider provider = getProvider(let);
             if (provider == null)
             {
                 try
                 {
-                    provider = AnalyzerUtil.newConstantProvider(let);
+                    provider = AnalyzerUtil.createConstantProvider(let);
                     addProvider(let, provider);
                 } catch (IllegalFormatTextException
                         | ProviderAlreadyExistsException e)
@@ -183,7 +182,7 @@ final class DependencyAnalyzer
         Class<?> path = getClassAttr(element);
         List<Element> elements = element.elements();
         List<Setter> setters = new LinkedList<>();
-        Factory factory = doFindNew(element, path);
+        Factory factory = doSearchNew(element, path);
         path = factory.getResultType();
         if (AnalyzerUtil.listNoEmpty(elements))
         {
@@ -267,7 +266,7 @@ final class DependencyAnalyzer
         }
     }
 
-    private Factory doFindNew(Element element, Class<?> path)
+    private Factory doSearchNew(Element element, Class<?> path)
     {
         List<Element> elements = element.elements();
         Factory factory = null;
@@ -395,7 +394,7 @@ final class DependencyAnalyzer
                 getString(R.string.let_string));
         if (ref != null)
         {
-            if (NameType.Reference.equals(
+            if (TextType.Reference.equals(
                     AnalyzerUtil.getNameType(ref)))
             {
                 return ref;
@@ -407,7 +406,7 @@ final class DependencyAnalyzer
             {
                 try
                 {
-                    provider = AnalyzerUtil.newConstantProvider(let);
+                    provider = AnalyzerUtil.createConstantProvider(let);
                     addProvider(let, provider);
                 } catch (IllegalFormatTextException | ProviderAlreadyExistsException e)
                 {
