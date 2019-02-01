@@ -16,9 +16,6 @@ import org.dom4j.io.SAXReader;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,7 +34,7 @@ final class DependencyAnalyzer
     @Nullable
     public static Dependency analysis(Object owner, Context context)
     {
-        int[] resIds = AnalyzerUtil.getResIds(owner);
+        int[] resIds = ReflectionUtil.getResIds(owner);
         if (resIds == null)
         {
             return null;
@@ -117,16 +114,16 @@ final class DependencyAnalyzer
             {
                 try
                 {
-                    addProvider(AnalyzerUtil.getAttrIfEmptyThrow(element,
+                    addProvider(Analysing.getAttrIfEmptyThrow(element,
                             getString(R.string.name_string)),
                             doAnalysisVar(element));
                 } catch (ProviderAlreadyExistsException e)
                 {
-                    throw AnalyzerUtil.formExceptionThrow(element, e);
+                    throw Analysing.formExceptionThrow(element, e);
                 }
             } else
             {
-                throw AnalyzerUtil.fromMessageThrow(element,
+                throw Analysing.fromMessageThrow(element,
                         "no found 'var' tag");
             }
         }
@@ -138,7 +135,7 @@ final class DependencyAnalyzer
 
     private Provider doAnalysisVar(Element element)
     {
-        String let = AnalyzerUtil.getAttrNoThrow(element,
+        String let = Analysing.getAttrNoThrow(element,
                 getString(R.string.let_string));
         if (let != null)
         {
@@ -151,27 +148,27 @@ final class DependencyAnalyzer
 
     private Provider doAnalysisLetVar(Element element)
     {
-        String let = AnalyzerUtil.getAttrIfEmptyThrow(element,
+        String let = Analysing.getAttrIfEmptyThrow(element,
                 getString(R.string.let_string));
-        if (TextType.Constant.equals(AnalyzerUtil.getNameType(let)))
+        if (TextType.Constant.equals(Analysing.getTextType(let)))
         {
             Provider provider = getProvider(let);
             if (provider == null)
             {
                 try
                 {
-                    provider = AnalyzerUtil.createConstantProvider(let);
+                    provider = Analysing.createConstantProvider(let);
                     addProvider(let, provider);
                 } catch (IllegalFormatTextException
                         | ProviderAlreadyExistsException e)
                 {
-                    throw AnalyzerUtil.formExceptionThrow(element, e);
+                    throw Analysing.formExceptionThrow(element, e);
                 }
             }
             return provider;
         } else
         {
-            throw AnalyzerUtil.fromMessageThrow(element,
+            throw Analysing.fromMessageThrow(element,
                     "illegal name " + let);
         }
     }
@@ -184,7 +181,7 @@ final class DependencyAnalyzer
         List<Setter> setters = new LinkedList<>();
         Factory factory = doSearchNew(element, path);
         path = factory.getResultType();
-        if (AnalyzerUtil.listNoEmpty(elements))
+        if (Analysing.listNoEmpty(elements))
         {
             for (Element item : elements)
             {
@@ -200,7 +197,7 @@ final class DependencyAnalyzer
                     setters.add(doAnalysisProperty(item, path));
                 } else
                 {
-                    throw AnalyzerUtil.fromMessageThrow(item,
+                    throw Analysing.fromMessageThrow(item,
                             "error token");
                 }
             }
@@ -214,7 +211,7 @@ final class DependencyAnalyzer
 
     private Setter doAnalysisField(Element element, Class<?> path)
     {
-        String name = AnalyzerUtil.getAttrIfEmptyThrow(element,
+        String name = Analysing.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         String refOrLet = getRefOrLetAttr(element);
         try
@@ -224,24 +221,16 @@ final class DependencyAnalyzer
                             path,
                             name,
                             getProviderResultTypeIfNullThrow(refOrLet),
-                            new Filter<Field>()
-                            {
-                                @Override
-                                public boolean filter(Field item)
-                                {
-                                    return !Modifier.isFinal(item.getModifiers())
-                                            && !Modifier.isStatic(item.getModifiers());
-                                }
-                            }), refOrLet);
+                            ReflectionUtil.SUPPORT_FIELD_FILTER), refOrLet);
         } catch (NoSuchFieldException | IllegalFormatTextException e)
         {
-            throw AnalyzerUtil.formExceptionThrow(element, e);
+            throw Analysing.formExceptionThrow(element, e);
         }
     }
 
     private Setter doAnalysisProperty(Element element, Class<?> path)
     {
-        String name = AnalyzerUtil.getAttrIfEmptyThrow(element,
+        String name = Analysing.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         String refOrLet = getRefOrLetAttr(element);
         try
@@ -251,18 +240,10 @@ final class DependencyAnalyzer
                                     + Character.toUpperCase(name.charAt(0))
                                     + name.substring(1, name.length()),
                             new Class<?>[]{getProviderResultTypeIfNullThrow(refOrLet)},
-                            new Filter<Method>()
-                            {
-                                @Override
-                                public boolean filter(Method item)
-                                {
-                                    return void.class.equals(item.getReturnType())
-                                            && !Modifier.isStatic(item.getModifiers());
-                                }
-                            }), refOrLet);
+                            ReflectionUtil.SUPPORT_PROPERTY_FILTER), refOrLet);
         } catch (NoSuchMethodException | IllegalFormatTextException e)
         {
-            throw AnalyzerUtil.formExceptionThrow(element, e);
+            throw Analysing.formExceptionThrow(element, e);
         }
     }
 
@@ -270,7 +251,7 @@ final class DependencyAnalyzer
     {
         List<Element> elements = element.elements();
         Factory factory = null;
-        if (AnalyzerUtil.listNoEmpty(elements))
+        if (Analysing.listNoEmpty(elements))
         {
             for (Element item : elements)
             {
@@ -281,7 +262,7 @@ final class DependencyAnalyzer
                         factory = doAnalysisNew(item, path);
                     } else
                     {
-                        throw AnalyzerUtil.fromMessageThrow(item,
+                        throw Analysing.fromMessageThrow(item,
                                 "'new' must only one");
                     }
                 }
@@ -298,7 +279,7 @@ final class DependencyAnalyzer
                     : factory;
         } catch (NoSuchMethodException e)
         {
-            throw AnalyzerUtil.formExceptionThrow(element, e);
+            throw Analysing.formExceptionThrow(element, e);
         }
     }
 
@@ -306,7 +287,7 @@ final class DependencyAnalyzer
     {
         List<Element> elements = element.elements();
         List<String> refOrLet = new LinkedList<>();
-        if (AnalyzerUtil.listNoEmpty(elements))
+        if (Analysing.listNoEmpty(elements))
         {
             for (Element item : elements)
             {
@@ -317,7 +298,7 @@ final class DependencyAnalyzer
                     refOrLet.add(getRefOrLetAttr(item));
                 } else
                 {
-                    throw AnalyzerUtil.fromMessageThrow(item,
+                    throw Analysing.fromMessageThrow(item,
                             "'arg' no found");
                 }
             }
@@ -330,10 +311,10 @@ final class DependencyAnalyzer
                 classes[i] = getProviderResultTypeIfNullThrow(refOrLet.get(i));
             } catch (IllegalFormatTextException e)
             {
-                throw AnalyzerUtil.formExceptionThrow(element, e);
+                throw Analysing.formExceptionThrow(element, e);
             }
         }
-        String isCustom = AnalyzerUtil.getAttrNoThrow(element,
+        String isCustom = Analysing.getAttrNoThrow(element,
                 getString(R.string.name_string));
         isCustom = isCustom != null
                 && !getString(R.string.new_normal_string).equals(isCustom)
@@ -347,16 +328,8 @@ final class DependencyAnalyzer
                                 path,
                                 isCustom,
                                 classes,
-                                new Filter<Method>()
-                                {
-                                    @Override
-                                    public boolean filter(Method item)
-                                    {
-                                        return Modifier.isStatic(item.getModifiers())
-                                                && !void.class
-                                                .equals(item.getReturnType());
-                                    }
-                                }), refOrLet);
+                                ReflectionUtil.SUPPORT_FACTORY_FILTER),
+                        refOrLet);
             } else
             {
                 return ReflectionUtil.newFactory(
@@ -367,7 +340,7 @@ final class DependencyAnalyzer
             }
         } catch (NoSuchMethodException e)
         {
-            throw AnalyzerUtil.formExceptionThrow(element, e);
+            throw Analysing.formExceptionThrow(element, e);
         }
     }
 
@@ -388,14 +361,14 @@ final class DependencyAnalyzer
 
     private String getRefOrLetAttr(Element element)
     {
-        String ref = AnalyzerUtil.getAttrNoThrow(element,
+        String ref = Analysing.getAttrNoThrow(element,
                 getString(R.string.ref_string));
-        String let = AnalyzerUtil.getAttrNoThrow(element,
+        String let = Analysing.getAttrNoThrow(element,
                 getString(R.string.let_string));
         if (ref != null)
         {
             if (TextType.Reference.equals(
-                    AnalyzerUtil.getNameType(ref)))
+                    Analysing.getTextType(ref)))
             {
                 return ref;
             }
@@ -406,22 +379,22 @@ final class DependencyAnalyzer
             {
                 try
                 {
-                    provider = AnalyzerUtil.createConstantProvider(let);
+                    provider = Analysing.createConstantProvider(let);
                     addProvider(let, provider);
                 } catch (IllegalFormatTextException | ProviderAlreadyExistsException e)
                 {
-                    throw AnalyzerUtil.formExceptionThrow(element, e);
+                    throw Analysing.formExceptionThrow(element, e);
                 }
             }
             return let;
         }
-        throw AnalyzerUtil.fromMessageThrow(element,
+        throw Analysing.fromMessageThrow(element,
                 "ref or let illegal ref = " + ref + " let = " + let);
     }
 
     private boolean isSingleton(Element element)
     {
-        String provider = AnalyzerUtil.getAttrNoThrow(element,
+        String provider = Analysing.getAttrNoThrow(element,
                 getString(R.string.provider_string));
         if (TextUtils.isEmpty(provider))
         {
@@ -435,7 +408,7 @@ final class DependencyAnalyzer
             return false;
         } else
         {
-            throw AnalyzerUtil.fromMessageThrow(element,
+            throw Analysing.fromMessageThrow(element,
                     "illegal provider = " + provider);
         }
     }
@@ -444,13 +417,13 @@ final class DependencyAnalyzer
     {
         try
         {
-            return Class.forName(AnalyzerUtil.getAttrIfEmptyThrow(
+            return Class.forName(Analysing.getAttrIfEmptyThrow(
                     element,
                     getString(R.string.class_string)
             ));
         } catch (ClassNotFoundException e)
         {
-            throw AnalyzerUtil.formExceptionThrow(element, e);
+            throw Analysing.formExceptionThrow(element, e);
         }
     }
 
@@ -460,17 +433,17 @@ final class DependencyAnalyzer
         {
             try
             {
-                if (!Class.forName(AnalyzerUtil.getAttrIfEmptyThrow(root,
+                if (!Class.forName(Analysing.getAttrIfEmptyThrow(root,
                         getString(R.string.owner_string)))
                         .equals(getProvider(getString(R.string.owner_string))
                                 .getResultType()))
                 {
-                    throw AnalyzerUtil.fromMessageThrow(root,
+                    throw Analysing.fromMessageThrow(root,
                             "owner type not match");
                 }
             } catch (ClassNotFoundException e)
             {
-                throw AnalyzerUtil.formExceptionThrow(root, e);
+                throw Analysing.formExceptionThrow(root, e);
             }
         }
     }

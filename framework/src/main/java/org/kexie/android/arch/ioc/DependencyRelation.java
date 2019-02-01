@@ -27,7 +27,7 @@ final class DependencyRelation
         }
     }
 
-    Set<String> nameSet()
+    Set<String> newNameSet()
     {
         return new ArraySet<>(providers.keySet());
     }

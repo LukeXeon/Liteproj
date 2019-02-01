@@ -1,10 +1,7 @@
 package org.kexie.android.arch.ioc;
 
-import android.app.Application;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 
 import org.dom4j.Attribute;
@@ -15,9 +12,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-final class AnalyzerUtil
+final class Analysing
 {
-    private AnalyzerUtil()
+    private Analysing()
     {
         throw new AssertionError();
     }
@@ -26,17 +23,6 @@ final class AnalyzerUtil
     {
         Object valueOf(String value);
     }
-
-    private static final List<Class<?>> SUPPORT_TYPES
-            = Collections.unmodifiableList(new LinkedList<Class<?>>()
-    {
-        {
-            add(Application.class);
-            add(AppCompatActivity.class);
-            add(Fragment.class);
-            add(LiteService.class);
-        }
-    });
 
     private static final List<ValueOf> VALUE_OF
             = Collections.unmodifiableList(new LinkedList<ValueOf>()
@@ -153,7 +139,7 @@ final class AnalyzerUtil
         return new GenerateDepartmentException(element, e);
     }
 
-    static TextType getNameType(String text)
+    static TextType getTextType(String text)
     {
         if (TextUtils.isEmpty(text))
         {
@@ -179,30 +165,6 @@ final class AnalyzerUtil
     static boolean listNoEmpty(List<?> list)
     {
         return list != null && list.size() != 0;
-    }
-
-    static void checkSupportTypeCompat(Class<?> type)
-    {
-        for (Class<?> clazz : SUPPORT_TYPES)
-        {
-            if (clazz.isAssignableFrom(type))
-            {
-                return;
-            }
-        }
-        throw new IllegalStateException("no support type " + type);
-    }
-
-    static boolean equalsToSupportTypes(Class<?> clazz)
-    {
-        for (Class<?> type : SUPPORT_TYPES)
-        {
-            if (type.equals(clazz))
-            {
-                return true;
-            }
-        }
-        return false;
     }
 
     static Provider
@@ -239,9 +201,4 @@ final class AnalyzerUtil
         }
     }
 
-    static int[] getResIds(Object owner)
-    {
-        Using using = owner.getClass().getAnnotation(Using.class);
-        return using == null ? null : using.value();
-    }
 }

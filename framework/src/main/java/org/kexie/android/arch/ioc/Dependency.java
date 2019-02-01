@@ -31,12 +31,12 @@ public final class Dependency
     {
         if (relations.size() > 1)
         {
-            Set<String> set = relations.get(0).nameSet();
+            Set<String> set = relations.get(0).newNameSet();
             Set<String> result = new ArraySet<>();
             for (DependencyRelation relation
                     : relations.subList(1, relations.size()))
             {
-                Set<String> newSet = relation.nameSet();
+                Set<String> newSet = relation.newNameSet();
                 result.addAll(set);
                 result.retainAll(newSet);
                 if (result.size() == 0)
@@ -55,7 +55,7 @@ public final class Dependency
                        @NonNull List<DependencyRelation> relations)
     {
         this.ownerType = owner.getClass();
-        AnalyzerUtil.checkSupportTypeCompat(ownerType);
+        ReflectionUtil.compatToSupportTypes(ownerType);
         this.owner = new WeakReference<>(owner);
         for (DependencyRelation relation : relations)
         {

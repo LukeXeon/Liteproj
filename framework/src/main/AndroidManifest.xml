@@ -2,7 +2,7 @@
           package="org.kexie.android.arch.ioc">
     <application>
         <provider
-            android:authorities="${applicationId}.ioc-initializer"
+            android:authorities="${applicationId}.dependencies-initializer"
             android:name=".DependenciesInitializer"
             android:exported="false"
             android:multiprocess="true"/>

@@ -1,18 +1,25 @@
 package org.kexie.android.arch.ioc;
 
+import android.app.Application;
 import android.support.annotation.NonNull;
+import android.support.v4.app.Fragment;
 import android.support.v4.util.ArrayMap;
+import android.support.v7.app.AppCompatActivity;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 final class ReflectionUtil
 {
+
     private ReflectionUtil()
     {
         throw new AssertionError();
@@ -22,6 +29,22 @@ final class ReflectionUtil
     {
         Object cast(T obj);
     }
+
+    private interface Filter<T>
+    {
+        boolean filter(T item);
+    }
+
+    private static final List<Class<?>> SUPPORT_TYPES
+            = Collections.unmodifiableList(new LinkedList<Class<?>>()
+    {
+        {
+            add(Application.class);
+            add(AppCompatActivity.class);
+            add(Fragment.class);
+            add(LiteService.class);
+        }
+    });
 
     private final static Map<Class<?>, Map<Class<?>, CastOf>> CAST_OF
             = Collections.unmodifiableMap(
@@ -102,7 +125,38 @@ final class ReflectionUtil
                 }
             });
 
-    static boolean isAssignTo(Class<?> objClass, Class<?> targetClass)
+    static final Filter<Field> SUPPORT_FIELD_FILTER = new Filter<Field>()
+    {
+        @Override
+        public boolean filter(Field item)
+        {
+            return !Modifier.isFinal(item.getModifiers())
+                    && !Modifier.isStatic(item.getModifiers());
+        }
+    };
+
+    static final Filter<Method> SUPPORT_PROPERTY_FILTER = new Filter<Method>()
+    {
+        @Override
+        public boolean filter(Method item)
+        {
+            return void.class.equals(item.getReturnType())
+                    && !Modifier.isStatic(item.getModifiers());
+        }
+    };
+
+    static final Filter<Method> SUPPORT_FACTORY_FILTER = new Filter<Method>()
+    {
+        @Override
+        public boolean filter(Method item)
+        {
+            return Modifier.isStatic(item.getModifiers())
+                    && !void.class
+                    .equals(item.getReturnType());
+        }
+    };
+
+    private static boolean isAssignTo(Class<?> objClass, Class<?> targetClass)
     {
         if (targetClass.isAssignableFrom(objClass))
         {
@@ -382,4 +436,95 @@ final class ReflectionUtil
                     + " ,can not cast " + sClass + " to " + field.getType());
         }
     }
+
+    static int[] getResIds(Object owner)
+    {
+        Using using = owner.getClass().getAnnotation(Using.class);
+        return using == null ? null : using.value();
+    }
+
+    static void compatToSupportTypes(Class<?> type)
+    {
+        for (Class<?> clazz : SUPPORT_TYPES)
+        {
+            if (clazz.isAssignableFrom(type))
+            {
+                return;
+            }
+        }
+        throw new IllegalStateException("no support type " + type);
+    }
+
+    private static boolean equalsToSupportTypes(Class<?> clazz)
+    {
+        for (Class<?> type : SUPPORT_TYPES)
+        {
+            if (type.equals(clazz))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static void inject(Object object, Dependency dependency)
+    {
+        Class<?> type = object.getClass();
+        while (type != null && !equalsToSupportTypes(type))
+        {
+            for (Field field : type.getDeclaredFields())
+            {
+                Reference reference = field.getAnnotation(Reference.class);
+                if (reference != null)
+                {
+                    int modifiers = field.getModifiers();
+                    if (!Modifier.isFinal(modifiers)
+                            && !Modifier.isStatic(modifiers)
+                            && isAssignTo(
+                            dependency.getResultType(reference.value()),
+                            field.getType()))
+                    {
+                        field.setAccessible(true);
+                        try
+                        {
+                            field.set(object, dependency.get(reference.value()));
+                        } catch (IllegalAccessException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+            for (Method property : type.getDeclaredMethods())
+            {
+                Reference reference = property.getAnnotation(Reference.class);
+                if (reference != null)
+                {
+                    int modifiers = property.getModifiers();
+                    String name = property.getName();
+                    Class<?>[] parameterTypes = property.getParameterTypes();
+                    if (name.length() >= 3
+                            && "set".equals(name.substring(0, 2))
+                            && parameterTypes.length == 1
+                            && !Modifier.isStatic(modifiers)
+                            && !Modifier.isAbstract(modifiers)
+                            && isAssignTo(dependency
+                                    .getResultType(reference.value()),
+                            parameterTypes[0]))
+                    {
+                        property.setAccessible(true);
+                        try
+                        {
+                            property.invoke(object, dependency.get(reference.value()));
+                        } catch (IllegalAccessException | InvocationTargetException e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+            type = type.getSuperclass();
+        }
+    }
+
 }

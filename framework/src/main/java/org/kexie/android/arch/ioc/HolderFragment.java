@@ -6,7 +6,6 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 
-
 public final class HolderFragment extends Fragment
 {
     private static HolderFragment newInstance()
@@ -94,7 +93,7 @@ public final class HolderFragment extends Fragment
         dependency = DependencyAnalyzer.analysis(owner, context);
         if (dependency != null)
         {
-            DependenciesManager.inject(owner, dependency);
+            ReflectionUtil.inject(owner, dependency);
         }
     }
 
