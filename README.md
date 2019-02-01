@@ -11,7 +11,7 @@
 	}
 
 	dependencies {
-	        implementation 'com.github.LukeXeon:kexie-android-arch:1.0.0-rc2'
+	        implementation 'com.github.LukeXeon:kexie-android-arch:+'
 	}
 ```
 - 但它又与绝大多数Android插件不同，它不需要你在Activity或者Application中进行初始化（对的，不需要自定义的Application类，也不需要你去调用奇怪的init方法再传入一个Context实例），它也没有使用注解处理器，而是完全依赖AppCompat组件包和反射实现，并使用ContentProvider来hook程序的启动流程完成自身初始化。
