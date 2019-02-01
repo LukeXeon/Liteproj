@@ -1,0 +1,11 @@
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.kexie.android.liteporj">
+    <application>
+        <provider
+            android:authorities="${applicationId}.liteproj-initializer"
+            android:name=".LiteprojInitializer"
+            android:exported="false"
+            android:multiprocess="true"/>
+    </application>
+</manifest>

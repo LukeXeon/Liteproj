@@ -100,7 +100,6 @@ public final class Dependency
         }
     }
 
-    @SuppressWarnings({"unchecked"})
     @NonNull
     private Object getOwner()
     {
