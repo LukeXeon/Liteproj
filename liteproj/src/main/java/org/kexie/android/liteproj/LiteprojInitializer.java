@@ -12,6 +12,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
+import android.util.Log;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -19,8 +20,10 @@ import java.util.List;
 public final class LiteprojInitializer
         extends VoidContentProvider
 {
-    private static DependencyAnalyzer
-            sDependencyAnalyzer;
+
+    private static final String TAG = "LiteprojInitializer";
+
+    private static DependencyAnalyzer sDependencyAnalyzer;
 
     final static LifecycleObserver
             sLifecycleHandler = new GenericLifecycleObserver()
@@ -84,6 +87,7 @@ public final class LiteprojInitializer
     {
         if (sDependencyAnalyzer == null)
         {
+            Log.i(TAG, "liteproj init");
             sDependencyAnalyzer = new DependencyAnalyzer(application);
             application.registerActivityLifecycleCallbacks(sActivityCallbacks);
         }

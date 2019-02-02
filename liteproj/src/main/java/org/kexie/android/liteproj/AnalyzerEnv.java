@@ -9,6 +9,7 @@ import android.support.v4.util.ArrayMap;
 import android.support.v4.util.ArraySet;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
+import android.util.Log;
 
 import org.dom4j.Attribute;
 import org.dom4j.Element;
@@ -30,6 +31,8 @@ import java.util.regex.Pattern;
 
 final class AnalyzerEnv
 {
+    private static final String TAG = "AnalyzerEnv";
+
     private interface TypeConverter
     {
         @NonNull
@@ -318,6 +321,7 @@ final class AnalyzerEnv
 
     static void inject(@NonNull Object object, @NonNull DependencyManager dependency)
     {
+        Log.d(TAG, String.format("inject to %s", object));
         Class<?> type = object.getClass();
         Set<Class<?>> baseTypes = new ArraySet<>();
         baseTypes.add(FragmentActivity.class);

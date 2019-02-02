@@ -2,10 +2,13 @@ package org.kexie.android.liteproj;
 
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.RawRes;
 import android.support.v4.util.LruCache;
 import android.text.TextUtils;
+import android.util.Log;
 
 import org.dom4j.Attribute;
 import org.dom4j.Document;
@@ -23,23 +26,33 @@ final class DependencyAnalyzer extends ContextWrapper
 {
     private final SAXReader mReader = new SAXReader();
 
+    private static final String TAG = "DependencyAnalyzer";
+
     private final LruCache<Integer, Dependency> mResultCache;
 
     private int getCacheSize()
     {
-//        try
-//        {
-//            PackageInfo packageInfo = getPackageManager()
-//                    .getPackageInfo(getPackageName(),
-//                            PackageManager.GET_SERVICES
-//                                    & PackageManager.GET_ACTIVITIES);
-//            return (packageInfo.activities == null ? 0 : packageInfo.activities.length)
-//                    + (packageInfo.services == null ? 0 : packageInfo.services.length);
-//        } catch (Exception e)
-//        {
-//            throw new AssertionError(e);
-//        }
-        return 32;
+        try
+        {
+            PackageInfo packageInfo = getPackageManager()
+                    .getPackageInfo(getPackageName(),
+                            PackageManager.GET_SERVICES
+                                    | PackageManager.GET_ACTIVITIES);
+            int size = ((packageInfo.activities == null
+                    || packageInfo.activities.length == 0
+                    ? 1
+                    : packageInfo.activities.length)
+                    * Runtime.getRuntime().availableProcessors()
+                    + (packageInfo.services == null
+                    || packageInfo.services.length == 0
+                    ? 1
+                    : packageInfo.services.length));
+            Log.i(TAG, String.format("cache size = %d", size));
+            return size;
+        } catch (PackageManager.NameNotFoundException e)
+        {
+            throw new AssertionError(e);
+        }
     }
 
     public DependencyAnalyzer(Context base)
