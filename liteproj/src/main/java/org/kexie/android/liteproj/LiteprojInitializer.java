@@ -22,7 +22,7 @@ public final class LiteprojInitializer
         Log.i(TAG, "liteproj init");
         Context context = getContext();
         assert context != null;
-        InjectionEventHandler.init(
+        LifecycleEventHandler.init(
                 (Application) context.getApplicationContext()
         );
         return true;

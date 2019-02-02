@@ -13,7 +13,7 @@ public class LiteService extends Service
     public void onCreate()
     {
         super.onCreate();
-        InjectionEventHandler.onAttach(this);
+        LifecycleEventHandler.onAttach(this);
     }
 
     @CallSuper
@@ -21,7 +21,7 @@ public class LiteService extends Service
     public void onDestroy()
     {
         super.onDestroy();
-        InjectionEventHandler.onDestroy(this);
+        LifecycleEventHandler.onDestroy(this);
     }
 
     @Nullable

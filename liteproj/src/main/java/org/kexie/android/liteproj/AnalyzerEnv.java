@@ -1,15 +1,10 @@
 package org.kexie.android.liteproj;
 
-import android.app.Application;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
 import android.support.v4.util.ArrayMap;
-import android.support.v4.util.ArraySet;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
-import android.util.Log;
 
 import org.dom4j.Attribute;
 import org.dom4j.Element;
@@ -26,7 +21,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 final class AnalyzerEnv

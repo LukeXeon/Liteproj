@@ -18,9 +18,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-final class InjectionEventHandler
+final class LifecycleEventHandler
 {
-    private InjectionEventHandler()
+    private LifecycleEventHandler()
     {
         throw new AssertionError();
     }
@@ -63,7 +63,7 @@ final class InjectionEventHandler
         }
     };
 
-    private static final String TAG = "InjectionEventHandler";
+    private static final String TAG = "LifecycleEventHandler";
 
     private static void inject(@NonNull Object object,
                                @NonNull DependencyManager dependency)
@@ -172,7 +172,7 @@ final class InjectionEventHandler
             DependencyManager.sTable.put(owner, manager);
             if (manager != null)
             {
-                org.kexie.android.liteproj.InjectionEventHandler.inject(owner, manager);
+                LifecycleEventHandler.inject(owner, manager);
             }
         }
     }
