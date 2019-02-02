@@ -247,7 +247,7 @@ final class AnalyzerEnv
 
     void addProvider(@NonNull String name, @NonNull Provider provider)
     {
-        if (DependencyManager.OWNER.equals(name)
+        if (!DependencyManager.OWNER.equals(name)
                 && !mProviders.containsKey(name))
         {
             mProviders.put(name, provider);
@@ -555,7 +555,7 @@ final class AnalyzerEnv
                             @NonNull Class<?> sClass,
                             @Nullable Filter<Field> filter)
     {
-        Field field = null;
+        Field field;
         try
         {
             field = clazz.getField(name);
@@ -793,10 +793,18 @@ final class AnalyzerEnv
                         return type.getMethod("valueOf", String.class)
                                 .invoke(null, value);
                     } catch (IllegalAccessException
-                            | InvocationTargetException
                             | NoSuchMethodException e)
                     {
                         throw new AssertionError(e);
+                    } catch (InvocationTargetException e)
+                    {
+                        if (e.getCause() instanceof NumberFormatException)
+                        {
+                            throw (NumberFormatException) e.getCause();
+                        } else
+                        {
+                            throw new AssertionError(e);
+                        }
                     }
                 }
             });

@@ -1,1 +1,1 @@
-include ':app', ':framework', ':liteporj'
+include ':app', ':liteproj'

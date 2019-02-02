@@ -29,18 +29,19 @@ final class DependencyAnalyzer extends ContextWrapper
 
     private int getCacheSize()
     {
-        try
-        {
-            PackageInfo packageInfo = getPackageManager()
-                    .getPackageInfo(getPackageName(),
-                            PackageManager.GET_SERVICES
-                                    & PackageManager.GET_ACTIVITIES);
-            return packageInfo.activities.length
-                    + packageInfo.services.length;
-        } catch (Exception e)
-        {
-            throw new AssertionError(e);
-        }
+//        try
+//        {
+//            PackageInfo packageInfo = getPackageManager()
+//                    .getPackageInfo(getPackageName(),
+//                            PackageManager.GET_SERVICES
+//                                    & PackageManager.GET_ACTIVITIES);
+//            return (packageInfo.activities == null ? 0 : packageInfo.activities.length)
+//                    + (packageInfo.services == null ? 0 : packageInfo.services.length);
+//        } catch (Exception e)
+//        {
+//            throw new AssertionError(e);
+//        }
+        return 32;
     }
 
     public DependencyAnalyzer(Context base)

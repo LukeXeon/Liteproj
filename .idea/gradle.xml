@@ -9,8 +9,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/app" />
-            <option value="$PROJECT_DIR$/framework" />
-            <option value="$PROJECT_DIR$/liteporj" />
+            <option value="$PROJECT_DIR$/liteproj" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />

@@ -64,7 +64,7 @@ public final class LiteprojInitializer
     };
 
     private final static Application.ActivityLifecycleCallbacks
-            sActivityCallbacks = new EmptyActivityLifecycleCallbacks()
+            sActivityCallbacks = new VoidActivityLifecycleCallbacks()
     {
         @Override
         public void onActivityCreated(Activity activity,

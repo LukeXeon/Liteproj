@@ -5,8 +5,9 @@ import android.support.v7.app.AppCompatActivity;
 
 import com.orhanobut.logger.Logger;
 
-import org.kexie.android.arch.ioc.Reference;
-import org.kexie.android.arch.ioc.Using;
+import org.kexie.android.liteporj.Reference;
+import org.kexie.android.liteporj.Using;
+
 
 @Using(R.raw.test_main)
 public class MainActivity extends AppCompatActivity
