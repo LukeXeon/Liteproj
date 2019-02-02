@@ -6,6 +6,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.util.ArrayMap;
 import android.support.v4.util.ArraySet;
+import android.util.Log;
 
 import java.lang.ref.WeakReference;
 import java.util.LinkedList;
@@ -19,6 +20,7 @@ import java.util.WeakHashMap;
 //依赖管理器
 public final class DependencyManager
 {
+    private static final String TAG = "DependencyManager";
     //使用‘owner’来访问依赖持有者
     @SuppressWarnings("WeakerAccess")
     public static final String OWNER = "owner";
@@ -151,6 +153,7 @@ public final class DependencyManager
     DependencyManager(@NonNull Object owner,
                       @NonNull List<Dependency> dependencies)
     {
+        Log.i(TAG, String.format("%s DependencyManager create for %s", this, owner));
         mOwnerType = owner.getClass();
         mManagers = merge(owner, dependencies);
         mOwner = new WeakReference<>(owner);
@@ -178,17 +181,29 @@ public final class DependencyManager
             Provider provider = dependency.getProvider(name);
             if (provider != null)
             {
-                if (DependencyType.SINGLETON.equals(provider.getType()))
+                DependencyManager manager = mManagers.get(dependency);
+                if (DependencyType.SINGLETON.equals(provider.getType()))//若为单例,则特殊处理
                 {
-                    Object singleton = mSingletons.get(name);
-                    if (singleton == null)
+                    if (equals(manager))//若是自己管理的单例则自己要负责提供
                     {
-                        singleton = provider.provide(mManagers.get(dependency));
-                        mSingletons.put(name, singleton);
+                        Object singleton = mSingletons.get(name);
+                        if (singleton == null)
+                        {
+                            singleton = provider.provide(manager);
+                            mSingletons.put(name, singleton);
+                        }
+                        Log.i(TAG, String.format("get %s singleton form %s", singleton, this));
+                        return (T) singleton;
                     }
-                    return (T) singleton;
+                    else//否则甩锅
+                    {
+                        return manager.get(name);
+                    }
+                } else
+                {
+                    //不是单例直接提供
+                    return provider.provide(manager);
                 }
-                return provider.provide(mManagers.get(dependency));
             }
         }
         throw new NoSuchElementException(String.format("By name %s", name));

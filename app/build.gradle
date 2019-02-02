@@ -22,6 +22,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation project(':liteproj')
     implementation 'com.android.support:appcompat-v7:+'
+    implementation 'android.arch.lifecycle:extensions:+'
     implementation 'com.android.support.constraint:constraint-layout:1.1.0'
     implementation 'com.orhanobut:logger:1.15'
 

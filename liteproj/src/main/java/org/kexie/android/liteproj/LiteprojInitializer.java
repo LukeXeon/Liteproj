@@ -1,143 +1,75 @@
 package org.kexie.android.liteproj;
 
-import android.app.Activity;
 import android.app.Application;
-import android.arch.lifecycle.GenericLifecycleObserver;
-import android.arch.lifecycle.Lifecycle;
-import android.arch.lifecycle.LifecycleObserver;
-import android.arch.lifecycle.LifecycleOwner;
+import android.content.ContentProvider;
+import android.content.ContentValues;
 import android.content.Context;
-import android.os.Bundle;
+import android.database.Cursor;
+import android.net.Uri;
 import android.support.annotation.NonNull;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
-import java.util.LinkedList;
-import java.util.List;
-
 public final class LiteprojInitializer
-        extends VoidContentProvider
+        extends ContentProvider
 {
 
     private static final String TAG = "LiteprojInitializer";
 
-    private static DependencyAnalyzer sDependencyAnalyzer;
-
-    final static LifecycleObserver
-            sLifecycleHandler = new GenericLifecycleObserver()
-    {
-        @Override
-        public void onStateChanged(LifecycleOwner source, Lifecycle.Event event)
-        {
-            switch (event)
-            {
-                case ON_CREATE:
-                {
-                    onDependencyAttach(source);
-                }
-                break;
-                case ON_DESTROY:
-                {
-                    onDependencyDestroy(source);
-                }
-                break;
-            }
-        }
-    };
-
-    private final static FragmentManager.FragmentLifecycleCallbacks
-            sFragmentCallbacks = new FragmentManager.FragmentLifecycleCallbacks()
-    {
-        @Override
-        public void onFragmentAttached(@NonNull FragmentManager fm,
-                                       @NonNull Fragment f,
-                                       @NonNull Context context)
-        {
-            onDependencyAttach(f);
-        }
-
-        @Override
-        public void onFragmentDestroyed(@NonNull FragmentManager fm,
-                                        @NonNull Fragment f)
-        {
-            onDependencyDestroy(f);
-        }
-    };
-
-    private final static Application.ActivityLifecycleCallbacks
-            sActivityCallbacks = new VoidActivityLifecycleCallbacks()
-    {
-        @Override
-        public void onActivityCreated(Activity activity,
-                                      Bundle savedInstanceState)
-        {
-            onDependencyAttach(activity);
-        }
-
-        @Override
-        public void onActivityDestroyed(Activity activity)
-        {
-            onDependencyDestroy(activity);
-        }
-    };
-
-    static synchronized void init(@NonNull Application application)
-    {
-        if (sDependencyAnalyzer == null)
-        {
-            Log.i(TAG, "liteproj init");
-            sDependencyAnalyzer = new DependencyAnalyzer(application);
-            application.registerActivityLifecycleCallbacks(sActivityCallbacks);
-        }
-    }
-
-    private static void onDependencyAttach(@NonNull Object owner)
-    {
-        if (!DependencyManager.sTable.containsKey(owner))
-        {
-            if (owner instanceof FragmentActivity)
-            {
-                ((FragmentActivity) owner).getSupportFragmentManager()
-                        .registerFragmentLifecycleCallbacks(sFragmentCallbacks,
-                                true);
-            }
-
-            DependencyManager manager = null;
-            int[] resIds = AnalyzerEnv.getResIds(owner);
-            if (resIds != null && resIds.length != 0)
-            {
-                List<Dependency> dependencies = new LinkedList<>();
-                for (int resId : resIds)
-                {
-                    dependencies.add(sDependencyAnalyzer.analysis(resId));
-                }
-                manager = new DependencyManager(owner, dependencies);
-            }
-            DependencyManager.sTable.put(owner, manager);
-            if (manager != null)
-            {
-                AnalyzerEnv.inject(owner, manager);
-            }
-        }
-    }
-
-    private static void onDependencyDestroy(@NonNull Object owner)
-    {
-        DependencyManager manager = DependencyManager.sTable.remove(owner);
-        if (manager != null)
-        {
-            manager.onDestroy();
-        }
-    }
-
     @Override
     public boolean onCreate()
     {
+        Log.i(TAG, "liteproj init");
         Context context = getContext();
         assert context != null;
-        init((Application) context.getApplicationContext());
+        InjectionEventHandler.init(
+                (Application) context.getApplicationContext()
+        );
         return true;
+    }
+
+
+    @Nullable
+    @Override
+    public Cursor query(@NonNull Uri uri,
+                        @Nullable String[] strings,
+                        @Nullable String s,
+                        @Nullable String[] strings1,
+                        @Nullable String s1)
+    {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public String getType(@NonNull Uri uri)
+    {
+        return null;
+    }
+
+
+    @Nullable
+    @Override
+    public Uri insert(@NonNull Uri uri,
+                      @Nullable ContentValues contentValues)
+    {
+        return null;
+    }
+
+    @Override
+    public int delete(@NonNull Uri uri,
+                      @Nullable String s,
+                      @Nullable String[] strings)
+    {
+        return 0;
+    }
+
+    @Override
+    public int update(@NonNull Uri uri,
+                      @Nullable ContentValues contentValues,
+                      @Nullable String s,
+                      @Nullable String[] strings)
+    {
+        return 0;
     }
 }

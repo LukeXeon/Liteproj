@@ -319,77 +319,6 @@ final class AnalyzerEnv
 
     //静态包内
 
-    static void inject(@NonNull Object object, @NonNull DependencyManager dependency)
-    {
-        Log.d(TAG, String.format("inject to %s", object));
-        Class<?> type = object.getClass();
-        Set<Class<?>> baseTypes = new ArraySet<>();
-        baseTypes.add(FragmentActivity.class);
-        baseTypes.add(Fragment.class);
-        baseTypes.add(Application.class);
-        baseTypes.add(LiteService.class);
-        baseTypes.add(LiteViewModel.class);
-        while (type != null && !baseTypes.contains(type))
-        {
-            for (Field field : type.getDeclaredFields())
-            {
-                Reference reference = field.getAnnotation(Reference.class);
-                if (reference != null)
-                {
-                    int modifiers = field.getModifiers();
-                    if (!Modifier.isFinal(modifiers)
-                            && !Modifier.isStatic(modifiers)
-                            && isAssignTo(
-                            dependency.getResultType(reference.value()),
-                            field.getType()))
-                    {
-                        field.setAccessible(true);
-                        try
-                        {
-                            field.set(object, castTo(
-                                    dependency.get(reference.value()),
-                                    field.getType()));
-                        } catch (Exception e)
-                        {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-            }
-            for (Method property : type.getDeclaredMethods())
-            {
-                Reference reference = property.getAnnotation(Reference.class);
-                if (reference != null)
-                {
-                    int modifiers = property.getModifiers();
-                    String name = property.getName();
-                    Class<?>[] parameterTypes = property.getParameterTypes();
-                    if (name.length() >= 3
-                            && "set".equals(name.substring(0, 2))
-                            && parameterTypes.length == 1
-                            && !Modifier.isStatic(modifiers)
-                            && !Modifier.isAbstract(modifiers)
-                            && isAssignTo(dependency
-                                    .getResultType(reference.value()),
-                            parameterTypes[0]))
-                    {
-                        property.setAccessible(true);
-                        try
-                        {
-                            property.invoke(object,
-                                    castTo(dependency.get(reference.value()),
-                                            parameterTypes[0]));
-                        } catch (Exception e)
-                        {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-            }
-            type = type.getSuperclass();
-        }
-    }
-
     @Nullable
     static int[] getResIds(@NonNull Object owner)
     {
@@ -521,8 +450,8 @@ final class AnalyzerEnv
 
     @NonNull
     @SuppressWarnings("unchecked")
-    private static <T> T castTo(@NonNull Object obj,
-                                @NonNull Class<T> targetClass)
+    static <T> T castTo(@NonNull Object obj,
+                        @NonNull Class<T> targetClass)
     {
         //处理引用类型和可赋值类型
         Class<?> objClass = obj.getClass();
@@ -540,8 +469,8 @@ final class AnalyzerEnv
                 targetClass.getName()));
     }
 
-    private static boolean isAssignTo(@NonNull Class<?> objClass,
-                                      @NonNull Class<?> targetClass)
+    static boolean isAssignTo(@NonNull Class<?> objClass,
+                              @NonNull Class<?> targetClass)
     {
         if (targetClass.isAssignableFrom(objClass))
         {
