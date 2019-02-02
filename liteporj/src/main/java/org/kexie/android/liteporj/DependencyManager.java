@@ -25,13 +25,11 @@ public final class DependencyManager
     private Map<Dependency, DependencyManager> mManagers;
     //用来缓存单例模式的快表
     private Map<String, Object> mSingletons = new ArrayMap<>();
-
     //可以从这里很方便的得到依赖管理器
     public static DependencyManager form(Object owner)
     {
         return sTable.get(owner);
     }
-
     //构造函数
     public DependencyManager(@NonNull Object owner,
                              @NonNull Map<Dependency, DependencyManager> managers)
@@ -40,7 +38,6 @@ public final class DependencyManager
         mOwner = new WeakReference<>(owner);
         mManagers = managers;
     }
-
     //返回持有者，若持有者已经被释放，则报错
     @NonNull
     private Object getOwner()
@@ -48,7 +45,6 @@ public final class DependencyManager
         return Objects.requireNonNull(mOwner.get(),
                 "Owner has been released");
     }
-
     //获取依赖，若此管理器上不存在，则将请求转发到其他管理器
     @NonNull
     @SuppressWarnings({"WeakerAccess", "unchecked"})
@@ -60,7 +56,7 @@ public final class DependencyManager
         }
         for (Dependency dependency : mManagers.keySet())
         {
-            DependencyProvider provider = dependency.getProvider(name);
+            Provider provider = dependency.getProvider(name);
             if (provider != null)
             {
                 if (DependencyType.SINGLETON.equals(provider.getType()))
@@ -78,7 +74,6 @@ public final class DependencyManager
         }
         throw new NoSuchElementException(String.format("By name %s", name));
     }
-
     //获取依赖类型，但是不进行生成操作
     @NonNull
     @SuppressWarnings({"WeakerAccess"})
@@ -90,7 +85,7 @@ public final class DependencyManager
         }
         for (Dependency item : mManagers.keySet())
         {
-            DependencyProvider provider = item.getProvider(name);
+            Provider provider = item.getProvider(name);
             if (provider != null)
             {
                 return provider.getResultType();
@@ -98,7 +93,6 @@ public final class DependencyManager
         }
         throw new NoSuchElementException(String.format("By name %s", name));
     }
-
     //获取依赖的提供器类型,单例或者是工厂模式
     @NonNull
     @SuppressWarnings({"WeakerAccess"})
@@ -110,7 +104,7 @@ public final class DependencyManager
         }
         for (Dependency item : mManagers.keySet())
         {
-            DependencyProvider provider = item.getProvider(name);
+            Provider provider = item.getProvider(name);
             if (provider != null)
             {
                 return provider.getType();
@@ -118,7 +112,6 @@ public final class DependencyManager
         }
         throw new NoSuchElementException(String.format("By name %s", name));
     }
-
     //在生命周期结束时调用,清理内部状态
     void onDestroy()
     {

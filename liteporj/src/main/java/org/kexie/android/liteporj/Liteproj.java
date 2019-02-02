@@ -13,9 +13,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.List;
 
 //1.完善异常信息,并提供更高的出错容忍
@@ -115,7 +112,7 @@ public final class Liteproj
                 ((FragmentActivity) owner).getSupportFragmentManager()
                         .registerFragmentLifecycleCallbacks(sFragmentCallbacks,
                                 true);
-                onInject(owner, null);
+                AnalyzerEnv.inject(owner, null);
             }
         }
     }
@@ -126,70 +123,6 @@ public final class Liteproj
         if (manager != null)
         {
             manager.onDestroy();
-        }
-    }
-
-    private static void onInject(Object object, DependencyManager dependency)
-    {
-        Class<?> type = object.getClass();
-        while (type != null)
-        {
-            for (Field field : type.getDeclaredFields())
-            {
-                Reference reference = field.getAnnotation(Reference.class);
-                if (reference != null)
-                {
-                    int modifiers = field.getModifiers();
-                    if (!Modifier.isFinal(modifiers)
-                            && !Modifier.isStatic(modifiers)
-                            && AnalyzerEnv.isAssignTo(
-                            dependency.getResultType(reference.value()),
-                            field.getType()))
-                    {
-                        field.setAccessible(true);
-                        try
-                        {
-                            field.set(object, AnalyzerEnv.castTo(
-                                    dependency.get(reference.value()),
-                                    field.getType()));
-                        } catch (Exception e)
-                        {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-            }
-            for (Method property : type.getDeclaredMethods())
-            {
-                Reference reference = property.getAnnotation(Reference.class);
-                if (reference != null)
-                {
-                    int modifiers = property.getModifiers();
-                    String name = property.getName();
-                    Class<?>[] parameterTypes = property.getParameterTypes();
-                    if (name.length() >= 3
-                            && "set".equals(name.substring(0, 2))
-                            && parameterTypes.length == 1
-                            && !Modifier.isStatic(modifiers)
-                            && !Modifier.isAbstract(modifiers)
-                            && AnalyzerEnv.isAssignTo(dependency
-                                    .getResultType(reference.value()),
-                            parameterTypes[0]))
-                    {
-                        property.setAccessible(true);
-                        try
-                        {
-                            property.invoke(object,
-                                    AnalyzerEnv.castTo(dependency.get(reference.value()),
-                                            parameterTypes[0]));
-                        } catch (Exception e)
-                        {
-                            throw new RuntimeException(e);
-                        }
-                    }
-                }
-            }
-            type = type.getSuperclass();
         }
     }
 

@@ -18,18 +18,22 @@ final class DependencyProvider implements Provider
     }
 
     @NonNull
+    @Override
     public <T> T provide(DependencyManager dependencyManager)
     {
         return null;
     }
 
+
     @NonNull
+    @Override
     public DependencyType getType()
     {
         return null;
     }
 
     @NonNull
+    @Override
     public Class<?> getResultType()
     {
         return null;

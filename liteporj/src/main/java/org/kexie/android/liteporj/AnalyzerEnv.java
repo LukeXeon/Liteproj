@@ -1,8 +1,12 @@
 package org.kexie.android.liteporj;
 
+import android.app.Application;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v4.util.ArrayMap;
+import android.support.v4.util.ArraySet;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
@@ -20,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 final class AnalyzerEnv
@@ -41,7 +46,7 @@ final class AnalyzerEnv
 
     private Node mCurrentNode;
 
-    private final Provider mOwnerProxy;
+    private final Provider mProxyProvider;
 
     private final Map<String, Provider> mProviders = new ArrayMap<>();
 
@@ -85,12 +90,12 @@ final class AnalyzerEnv
 
     Dependency makeResult()
     {
-        return new Dependency(mOwnerProxy.getResultType(), mProviders);
+        return new Dependency(mProxyProvider.getResultType(), mProviders);
     }
 
     AnalyzerEnv(final Class<?> ownerType, Node node)
     {
-        this.mOwnerProxy = new Provider()
+        this.mProxyProvider = new Provider()
         {
             @NonNull
             @Override
@@ -207,7 +212,7 @@ final class AnalyzerEnv
     {
         if (DependencyManager.OWNER.equals(name))
         {
-            return mOwnerProxy;
+            return mProxyProvider;
         }
         return mProviders.get(name);
     }
@@ -272,6 +277,76 @@ final class AnalyzerEnv
     }
 
     //静态包内
+
+    static void inject(Object object, DependencyManager dependency)
+    {
+        Class<?> type = object.getClass();
+        Set<Class<?>> baseTypes = new ArraySet<>();
+        baseTypes.add(FragmentActivity.class);
+        baseTypes.add(Fragment.class);
+        baseTypes.add(Application.class);
+        baseTypes.add(LiteService.class);
+        baseTypes.add(LiteViewModel.class);
+        while (type != null && !baseTypes.contains(type))
+        {
+            for (Field field : type.getDeclaredFields())
+            {
+                Reference reference = field.getAnnotation(Reference.class);
+                if (reference != null)
+                {
+                    int modifiers = field.getModifiers();
+                    if (!Modifier.isFinal(modifiers)
+                            && !Modifier.isStatic(modifiers)
+                            && isAssignTo(
+                            dependency.getResultType(reference.value()),
+                            field.getType()))
+                    {
+                        field.setAccessible(true);
+                        try
+                        {
+                            field.set(object, castTo(
+                                    dependency.get(reference.value()),
+                                    field.getType()));
+                        } catch (Exception e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+            for (Method property : type.getDeclaredMethods())
+            {
+                Reference reference = property.getAnnotation(Reference.class);
+                if (reference != null)
+                {
+                    int modifiers = property.getModifiers();
+                    String name = property.getName();
+                    Class<?>[] parameterTypes = property.getParameterTypes();
+                    if (name.length() >= 3
+                            && "set".equals(name.substring(0, 2))
+                            && parameterTypes.length == 1
+                            && !Modifier.isStatic(modifiers)
+                            && !Modifier.isAbstract(modifiers)
+                            && isAssignTo(dependency
+                                    .getResultType(reference.value()),
+                            parameterTypes[0]))
+                    {
+                        property.setAccessible(true);
+                        try
+                        {
+                            property.invoke(object,
+                                    castTo(dependency.get(reference.value()),
+                                            parameterTypes[0]));
+                        } catch (Exception e)
+                        {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }
+            }
+            type = type.getSuperclass();
+        }
+    }
 
     static int[] getResIds(Object owner)
     {
@@ -359,12 +434,13 @@ final class AnalyzerEnv
         };
     }
 
-    @SuppressWarnings("unchecked")
+
     static Factory newFactory(final Constructor<?> constructor,
                               final List<String> references)
     {
         return new Factory()
         {
+            @SuppressWarnings("unchecked")
             @NonNull
             @Override
             public <T> T newInstance(DependencyManager dependency)
@@ -398,7 +474,7 @@ final class AnalyzerEnv
     }
 
     @SuppressWarnings("unchecked")
-    static <T> T castTo(Object obj, Class<T> targetClass)
+    private static <T> T castTo(Object obj, Class<T> targetClass)
     {
         //处理引用类型和可赋值类型
         Class<?> objClass = obj.getClass();
@@ -411,13 +487,12 @@ final class AnalyzerEnv
         {
             return (T) castTo.castTo(obj);
         }
-        throw new ClassCastException("Cannot cast "
-                + objClass.getName()
-                + " to "
-                + targetClass.getName());
+        throw new ClassCastException(String.format("Can not cast %s to %s",
+                objClass.getName(),
+                targetClass.getName()));
     }
 
-    static boolean isAssignTo(Class<?> objClass, Class<?> targetClass)
+    private static boolean isAssignTo(Class<?> objClass, Class<?> targetClass)
     {
         if (targetClass.isAssignableFrom(objClass))
         {
