@@ -1,14 +1,21 @@
 package org.kexie.android.liteporj;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.util.ArrayMap;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
+
+import org.dom4j.Attribute;
+import org.dom4j.Element;
+import org.dom4j.Node;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -29,23 +36,92 @@ final class AnalyzerEnv
         Object valueOf(@NonNull String value);
     }
 
-    private final Class<?> mOwnerType;
+    private static final Map<Pair<Class<?>, Class<?>>, TypeConverter>
+            sTypeConverters = newTypeConverters();
+
+    private Node mCurrentNode;
+
+    private final Provider mOwnerProxy;
 
     private final Map<String, Provider> mProviders = new ArrayMap<>();
 
-    private final Map<Pair<Class<?>, Class<?>>, TypeConverter> mTypeConverters;
-
     private final List<TextConverter> mTextConverters;
 
-    private final Pattern mNamePattern;
+    private final Pattern mNamePattern = Pattern
+            .compile("[\u4e00-\u9fa5_A-Za-z][\u4e00-\u9fa5_A-Za-z0-9]*");
 
-    @NonNull
-    static AnalyzerEnv newEnv(@NonNull Object owner)
+    private final Filter<Method> mPropertyFilter = new Filter<Method>()
     {
-        return new AnalyzerEnv(owner.getClass(),
-                newTypeConverter(),
-                newTextConverter(),
-                newNamePattern());
+        @Override
+        public boolean filter(Method item)
+        {
+            return void.class.equals(item.getReturnType())
+                    && !Modifier.isStatic(item.getModifiers());
+        }
+    };
+
+    private final Filter<Method> mFactoryFilter = new Filter<Method>()
+    {
+        @Override
+        public boolean filter(Method item)
+        {
+            return Modifier.isStatic(item.getModifiers())
+                    && !void.class
+                    .equals(item.getReturnType());
+        }
+    };
+
+    private final Filter<Field> mFieldFilter = new Filter<Field>()
+    {
+        @Override
+        public boolean filter(Field item)
+        {
+            return !Modifier.isFinal(item.getModifiers())
+                    && !Modifier.isStatic(item.getModifiers());
+        }
+    };
+
+    //实例包内
+
+    Dependency makeResult()
+    {
+        return new Dependency(mOwnerProxy.getResultType(), mProviders);
+    }
+
+    AnalyzerEnv(final Class<?> ownerType, Node node)
+    {
+        this.mOwnerProxy = new Provider()
+        {
+            @NonNull
+            @Override
+            public <T> T provide(DependencyManager dependencyManager)
+            {
+                throw new IllegalStateException(
+                        "Objects cannot be generated " +
+                                "from proxy providers");
+            }
+
+            @NonNull
+            @Override
+            public DependencyType getType()
+            {
+                return DependencyType.SINGLETON;
+            }
+
+            @NonNull
+            @Override
+            public Class<?> getResultType()
+            {
+                return ownerType;
+            }
+        };
+        this.mTextConverters = newTextConverters();
+        this.mCurrentNode = node;
+    }
+
+    void mark(Node currentNode)
+    {
+        this.mCurrentNode = currentNode;
     }
 
     TextType getTextType(String text)
@@ -76,7 +152,7 @@ final class AnalyzerEnv
         String value = let.substring(1, let.length());
         if (let.charAt(0) == '@')
         {
-            return new Provider(
+            return new DependencyProvider(
                     DependencyType.SINGLETON,
                     newSingleton(value),
                     null
@@ -87,7 +163,7 @@ final class AnalyzerEnv
             {
                 try
                 {
-                    return new Provider(
+                    return new DependencyProvider(
                             DependencyType.SINGLETON,
                             newSingleton(valueOf.valueOf(value)),
                             null
@@ -97,12 +173,118 @@ final class AnalyzerEnv
 
                 }
             }
-            throw new IllegalStateException("no type match to let = " + let);
+            throw new IllegalStateException(
+                    String.format(
+                            "The name %s does not match the rule of let"
+                            , let));
         }
     }
 
+    Method findProperty(Class<?> clazz,
+                        String name,
+                        Class<?>[] sClasses)
+    {
+        return findMethod(clazz, "set"
+                + Character.toUpperCase(name.charAt(0))
+                + name.substring(1), sClasses, mPropertyFilter);
+    }
 
-    Setter newSetter(final Method method, final String name)
+    Method findFactory(Class<?> clazz,
+                       String name,
+                       Class<?>[] sClasses)
+    {
+        return findMethod(clazz, name, sClasses, mFactoryFilter);
+    }
+
+    Field findField(Class<?> clazz,
+                    String name,
+                    Class<?> sClass)
+    {
+        return findField(clazz, name, sClass, mFieldFilter);
+    }
+
+    Provider getProvider(String name)
+    {
+        if (DependencyManager.OWNER.equals(name))
+        {
+            return mOwnerProxy;
+        }
+        return mProviders.get(name);
+    }
+
+    void addProvider(String name, Provider provider)
+    {
+        if (DependencyManager.OWNER.equals(name)
+                && !mProviders.containsKey(name))
+        {
+            mProviders.put(name, provider);
+        } else
+        {
+            throw fromMessageThrow(
+                    String.format("The provider named %s already exists",
+                            name)
+            );
+        }
+    }
+
+    @Nullable
+    String getAttrNoThrow(Element element,
+                          String attr)
+    {
+        mark(element);
+        if (element.attributeCount() != 0)
+        {
+            Attribute attribute = element.attribute(attr);
+            if (attribute != null)
+            {
+                return attribute.getValue();
+            }
+        }
+        return null;
+    }
+
+    Constructor<?> findConstructor(Class<?> clazz,
+                                   Class<?>[] classes)
+    {
+        return findConstructor(clazz, classes, null);
+    }
+
+    @NonNull
+    String getAttrIfEmptyThrow(Element element,
+                               String attr)
+    {
+        mark(element);
+        String name = getAttrNoThrow(element, attr);
+        if (!TextUtils.isEmpty(name))
+        {
+            return name;
+        }
+        throw fromMessageThrow(String.format("Attr %s no found", name));
+    }
+
+    RuntimeException fromMessageThrow(String massage)
+    {
+        return new GenerateDepartmentException(String.format(
+                "Error in %s ", mCurrentNode.asXML())
+                + (TextUtils.isEmpty(massage)
+                ? ""
+                : String.format(", message = %s", massage)));
+    }
+
+    //静态包内
+
+    static int[] getResIds(Object owner)
+    {
+        Using using = owner.getClass().getAnnotation(Using.class);
+        return using == null ? null : using.value();
+    }
+
+    static boolean listNoEmpty(List<?> list)
+    {
+        return list != null && list.size() != 0;
+    }
+
+    static Setter newSetter(final Method method, final String name)
     {
         return new Setter()
         {
@@ -122,7 +304,7 @@ final class AnalyzerEnv
         };
     }
 
-    Setter newSetter(final Field field, final String name)
+    static Setter newSetter(final Field field, final String name)
     {
         return new Setter()
         {
@@ -134,7 +316,7 @@ final class AnalyzerEnv
                 {
                     field.set(target, castTo(dependency.get(name),
                             field.getType()));
-                } catch (Exception e)
+                } catch (IllegalAccessException e)
                 {
                     throw new RuntimeException(e);
                 }
@@ -143,8 +325,8 @@ final class AnalyzerEnv
     }
 
     @SuppressWarnings("unchecked")
-    Factory newFactory(final Method method,
-                       final List<String> references)
+    static Factory newFactory(final Method method,
+                              final List<String> references)
     {
         return new Factory()
         {
@@ -161,7 +343,8 @@ final class AnalyzerEnv
                                     dependency
                             )
                     );
-                } catch (Exception e)
+                } catch (IllegalAccessException
+                        | InvocationTargetException e)
                 {
                     throw new RuntimeException(e);
                 }
@@ -177,8 +360,8 @@ final class AnalyzerEnv
     }
 
     @SuppressWarnings("unchecked")
-    Factory newFactory(final Constructor<?> constructor,
-                       final List<String> references)
+    static Factory newFactory(final Constructor<?> constructor,
+                              final List<String> references)
     {
         return new Factory()
         {
@@ -196,7 +379,9 @@ final class AnalyzerEnv
                                     dependency
                             )
                     );
-                } catch (Exception e)
+                } catch (IllegalAccessException
+                        | InvocationTargetException
+                        | InstantiationException e)
                 {
                     throw new RuntimeException(e);
                 }
@@ -212,15 +397,78 @@ final class AnalyzerEnv
         };
     }
 
-    Method findMethod(Class<?> clazz,
-                      String name,
-                      Class<?>[] sClasses,
-                      Filter<Method> filter)
-            throws NoSuchMethodException
+    @SuppressWarnings("unchecked")
+    static <T> T castTo(Object obj, Class<T> targetClass)
+    {
+        //处理引用类型和可赋值类型
+        Class<?> objClass = obj.getClass();
+        if (targetClass.isAssignableFrom(objClass))
+        {
+            return (T) obj;
+        }
+        TypeConverter castTo = sTypeConverters.get(Pair.create(objClass, targetClass));
+        if (castTo != null)
+        {
+            return (T) castTo.castTo(obj);
+        }
+        throw new ClassCastException("Cannot cast "
+                + objClass.getName()
+                + " to "
+                + targetClass.getName());
+    }
+
+    static boolean isAssignTo(Class<?> objClass, Class<?> targetClass)
+    {
+        if (targetClass.isAssignableFrom(objClass))
+        {
+            return true;
+        }
+        return sTypeConverters.get(Pair.create(objClass, targetClass)) != null;
+    }
+
+    //实例私有
+
+    private Field findField(Class<?> clazz,
+                            String name,
+                            Class<?> sClass,
+                            Filter<Field> filter)
+    {
+        Field field = null;
+        try
+        {
+            field = clazz.getField(name);
+        } catch (NoSuchFieldException e)
+        {
+            throw formExceptionThrow(e);
+        }
+        if (isAssignTo(sClass, field.getType())
+                && (filter == null || filter.filter(field)))
+        {
+            return field;
+        } else
+        {
+            throw fromMessageThrow(String.format(
+                    "Can't found field name by %s , can't cast %s to %s",
+                    name,
+                    sClass,
+                    field.getType()));
+        }
+    }
+
+    private Method findMethod(Class<?> clazz,
+                              String name,
+                              Class<?>[] sClasses,
+                              Filter<Method> filter)
     {
         if (sClasses == null)
         {
-            return clazz.getMethod(name);
+            try
+            {
+                return clazz.getMethod(name);
+            } catch (NoSuchMethodException e)
+            {
+                throw formExceptionThrow(e);
+            }
         }
         for (Method method : clazz.getMethods())
         {
@@ -247,17 +495,26 @@ final class AnalyzerEnv
                 return method;
             }
         }
-        throw new NoSuchMethodException("name by " + name);
+        throw fromMessageThrow(String.format(
+                "method whose name %s is not found in %s and requires %s",
+                name,
+                clazz,
+                Arrays.toString(sClasses)));
     }
 
-    Constructor<?> findConstructor(Class<?> clazz,
-                                   Class<?>[] sClasses,
-                                   Filter<Constructor<?>> filter)
-            throws NoSuchMethodException
+    private Constructor<?> findConstructor(Class<?> clazz,
+                                           Class<?>[] sClasses,
+                                           Filter<Constructor<?>> filter)
     {
         if (sClasses == null)
         {
-            return clazz.getConstructor();
+            try
+            {
+                return clazz.getConstructor();
+            } catch (NoSuchMethodException e)
+            {
+                throw formExceptionThrow(e);
+            }
         }
         for (Constructor<?> constructor : clazz.getConstructors())
         {
@@ -283,43 +540,19 @@ final class AnalyzerEnv
                 return constructor;
             }
         }
-        throw new NoSuchMethodException("no constructor match");
+        throw fromMessageThrow(String.format("Can't find constructor for %s in %s",
+                Arrays.toString(sClasses),
+                clazz));
     }
 
-    Field findField(Class<?> clazz,
-                    String name,
-                    Class<?> sClass,
-                    Filter<Field> filter)
-            throws NoSuchFieldException
+    private RuntimeException
+    formExceptionThrow(Throwable e)
     {
-        Field field = clazz.getField(name);
-        if (isAssignTo(sClass, field.getType())
-                && (filter == null || filter.filter(field)))
-        {
-            return field;
-        } else
-        {
-            throw new NoSuchFieldException("can't found field name by "
-                    + name
-                    + " ,can not cast " + sClass + " to " + field.getType());
-        }
+        return new GenerateDepartmentException(
+                String.format("Error in %s", mCurrentNode.asXML()), e);
     }
 
-    Dependency makeResult()
-    {
-        return new Dependency(mOwnerType, mProviders);
-    }
-
-    private AnalyzerEnv(Class<?> ownerType,
-                        Map<Pair<Class<?>, Class<?>>, TypeConverter> casts,
-                        List<TextConverter> valueOfList,
-                        Pattern namePattern)
-    {
-        this.mOwnerType = ownerType;
-        this.mTypeConverters = casts;
-        this.mTextConverters = valueOfList;
-        this.mNamePattern = namePattern;
-    }
+    //静态私有
 
     private static boolean isFloatType(@NonNull Class<?> type)
     {
@@ -327,7 +560,7 @@ final class AnalyzerEnv
     }
 
     @NonNull
-    private static Map<Pair<Class<?>, Class<?>>, TypeConverter> newTypeConverter()
+    private static Map<Pair<Class<?>, Class<?>>, TypeConverter> newTypeConverters()
     {
         TypeConverter castToThis = new TypeConverter()
         {
@@ -401,7 +634,7 @@ final class AnalyzerEnv
         return result;
     }
 
-    private static List<TextConverter> newTextConverter()
+    private static List<TextConverter> newTextConverters()
     {
         List<TextConverter> result = new LinkedList<>();
         result.add(new TextConverter()
@@ -452,15 +685,10 @@ final class AnalyzerEnv
         return result;
     }
 
-    private static Pattern newNamePattern()
-    {
-        return Pattern.compile("[\u4e00-\u9fa5_A-Za-z][\u4e00-\u9fa5_A-Za-z0-9]*");
-    }
-
     @NonNull
-    private Object[] getReferences(List<String> refs,
-                                   Class<?>[] targetClasses,
-                                   DependencyManager dependency)
+    private static Object[] getReferences(List<String> refs,
+                                          Class<?>[] targetClasses,
+                                          DependencyManager dependency)
     {
         Object[] args = new Object[refs.size()];
         for (int i = 0; i < refs.size(); i++)
@@ -472,36 +700,7 @@ final class AnalyzerEnv
     }
 
     @SuppressWarnings("unchecked")
-    private <T> T castTo(Object obj, Class<T> targetClass)
-    {
-        //处理引用类型和可赋值类型
-        Class<?> objClass = obj.getClass();
-        if (targetClass.isAssignableFrom(objClass))
-        {
-            return (T) obj;
-        }
-        TypeConverter castTo = mTypeConverters.get(Pair.create(objClass, targetClass));
-        if (castTo != null)
-        {
-            return (T) castTo.castTo(obj);
-        }
-        throw new ClassCastException("Cannot cast "
-                + objClass.getName()
-                + " to "
-                + targetClass.getName());
-    }
-
-    private boolean isAssignTo(Class<?> objClass, Class<?> targetClass)
-    {
-        if (targetClass.isAssignableFrom(objClass))
-        {
-            return true;
-        }
-        return mTypeConverters.get(Pair.create(objClass, targetClass)) != null;
-    }
-
-    @SuppressWarnings("unchecked")
-    private Factory newSingleton(Object object)
+    private static Factory newSingleton(Object object)
     {
         final Object nonNull = Objects.requireNonNull(object);
         return new Factory()

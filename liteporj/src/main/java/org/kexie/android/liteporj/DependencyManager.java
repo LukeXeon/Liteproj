@@ -60,7 +60,7 @@ public final class DependencyManager
         }
         for (Dependency dependency : mManagers.keySet())
         {
-            Provider provider = dependency.getProvider(name);
+            DependencyProvider provider = dependency.getProvider(name);
             if (provider != null)
             {
                 if (DependencyType.SINGLETON.equals(provider.getType()))
@@ -68,12 +68,12 @@ public final class DependencyManager
                     Object singleton = mSingletons.get(name);
                     if (singleton == null)
                     {
-                        singleton = provider.newInstance(mManagers.get(dependency));
+                        singleton = provider.provide(mManagers.get(dependency));
                         mSingletons.put(name, singleton);
                     }
                     return (T) singleton;
                 }
-                return provider.newInstance(mManagers.get(dependency));
+                return provider.provide(mManagers.get(dependency));
             }
         }
         throw new NoSuchElementException(String.format("By name %s", name));
@@ -90,7 +90,7 @@ public final class DependencyManager
         }
         for (Dependency item : mManagers.keySet())
         {
-            Provider provider = item.getProvider(name);
+            DependencyProvider provider = item.getProvider(name);
             if (provider != null)
             {
                 return provider.getResultType();
@@ -110,7 +110,7 @@ public final class DependencyManager
         }
         for (Dependency item : mManagers.keySet())
         {
-            Provider provider = item.getProvider(name);
+            DependencyProvider provider = item.getProvider(name);
             if (provider != null)
             {
                 return provider.getType();

@@ -17,4 +17,7 @@
     <string name="raw_res_header_string">\@raw/</string>
     <string name="let_string">let</string>
     <string name="raw_string">raw</string>
+    <string name="name_pattern"><![CDATA[
+[\u4e00-\u9fa5_A-Za-z][\u4e00-\u9fa5_A-Za-z0-9]*
+    ]]></string>
 </resources>

@@ -142,14 +142,14 @@ public final class Liteproj
                     int modifiers = field.getModifiers();
                     if (!Modifier.isFinal(modifiers)
                             && !Modifier.isStatic(modifiers)
-                            && Reflections.isAssignTo(
+                            && AnalyzerEnv.isAssignTo(
                             dependency.getResultType(reference.value()),
                             field.getType()))
                     {
                         field.setAccessible(true);
                         try
                         {
-                            field.set(object, Reflections.castTo(
+                            field.set(object, AnalyzerEnv.castTo(
                                     dependency.get(reference.value()),
                                     field.getType()));
                         } catch (Exception e)
@@ -172,7 +172,7 @@ public final class Liteproj
                             && parameterTypes.length == 1
                             && !Modifier.isStatic(modifiers)
                             && !Modifier.isAbstract(modifiers)
-                            && Reflections.isAssignTo(dependency
+                            && AnalyzerEnv.isAssignTo(dependency
                                     .getResultType(reference.value()),
                             parameterTypes[0]))
                     {
@@ -180,7 +180,7 @@ public final class Liteproj
                         try
                         {
                             property.invoke(object,
-                                    Reflections.castTo(dependency.get(reference.value()),
+                                    AnalyzerEnv.castTo(dependency.get(reference.value()),
                                             parameterTypes[0]));
                         } catch (Exception e)
                         {
