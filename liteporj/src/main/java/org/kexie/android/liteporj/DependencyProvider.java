@@ -19,7 +19,7 @@ final class DependencyProvider implements Provider
 
     @NonNull
     @Override
-    public <T> T provide(DependencyManager dependencyManager)
+    public <T> T provide(@NonNull DependencyManager dependencyManager)
     {
         return null;
     }

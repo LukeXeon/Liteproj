@@ -44,7 +44,7 @@ final class AnalyzerEnv
     private static final Map<Pair<Class<?>, Class<?>>, TypeConverter>
             sTypeConverters = newTypeConverters();
 
-    private Node mCurrentNode;
+    private Node mCurrent;
 
     private final Provider mProxyProvider;
 
@@ -58,7 +58,7 @@ final class AnalyzerEnv
     private final Filter<Method> mPropertyFilter = new Filter<Method>()
     {
         @Override
-        public boolean filter(Method item)
+        public boolean filter(@NonNull Method item)
         {
             return void.class.equals(item.getReturnType())
                     && !Modifier.isStatic(item.getModifiers());
@@ -68,7 +68,7 @@ final class AnalyzerEnv
     private final Filter<Method> mFactoryFilter = new Filter<Method>()
     {
         @Override
-        public boolean filter(Method item)
+        public boolean filter(@NonNull Method item)
         {
             return Modifier.isStatic(item.getModifiers())
                     && !void.class
@@ -79,7 +79,7 @@ final class AnalyzerEnv
     private final Filter<Field> mFieldFilter = new Filter<Field>()
     {
         @Override
-        public boolean filter(Field item)
+        public boolean filter(@NonNull Field item)
         {
             return !Modifier.isFinal(item.getModifiers())
                     && !Modifier.isStatic(item.getModifiers());
@@ -93,13 +93,13 @@ final class AnalyzerEnv
         return new Dependency(mProxyProvider.getResultType(), mProviders);
     }
 
-    AnalyzerEnv(final Class<?> ownerType, Node node)
+    AnalyzerEnv(@NonNull final Class<?> ownerType, @NonNull Node node)
     {
         this.mProxyProvider = new Provider()
         {
             @NonNull
             @Override
-            public <T> T provide(DependencyManager dependencyManager)
+            public <T> T provide(@NonNull DependencyManager dependencyManager)
             {
                 throw new IllegalStateException(
                         "Objects cannot be generated " +
@@ -121,15 +121,30 @@ final class AnalyzerEnv
             }
         };
         this.mTextConverters = newTextConverters();
-        this.mCurrentNode = node;
+        mark(node);
     }
 
-    void mark(Node currentNode)
+    void mark(@NonNull Node currentNode)
     {
-        this.mCurrentNode = currentNode;
+        this.mCurrent = currentNode;
     }
 
-    TextType getTextType(String text)
+
+    @NonNull
+    Class<?> getResultTypeIfNullThrow(@NonNull String name)
+    {
+        Provider provider = mProviders.get(name);
+        if (provider != null)
+        {
+            return provider.getResultType();
+        } else
+        {
+            throw fromMessageThrow(String.format("no found name by %s provider", name));
+        }
+    }
+
+    @NonNull
+    TextType getTextType(@NonNull String text)
     {
         if (TextUtils.isEmpty(text))
         {
@@ -152,7 +167,8 @@ final class AnalyzerEnv
         }
     }
 
-    Provider newConstantProvider(String let)
+    @NonNull
+    Provider newConstantProvider(@NonNull String let)
     {
         String value = let.substring(1, let.length());
         if (let.charAt(0) == '@')
@@ -185,30 +201,35 @@ final class AnalyzerEnv
         }
     }
 
-    Method findProperty(Class<?> clazz,
-                        String name,
-                        Class<?>[] sClasses)
+    @NonNull
+    Method findProperty(@NonNull Class<?> clazz,
+                        @NonNull String name,
+                        @Nullable Class<?> sClass)
     {
         return findMethod(clazz, "set"
-                + Character.toUpperCase(name.charAt(0))
-                + name.substring(1), sClasses, mPropertyFilter);
+                        + Character.toUpperCase(name.charAt(0))
+                        + name.substring(1), new Class<?>[]{sClass},
+                mPropertyFilter);
     }
 
-    Method findFactory(Class<?> clazz,
-                       String name,
-                       Class<?>[] sClasses)
+    @NonNull
+    Method findFactory(@NonNull Class<?> clazz,
+                       @NonNull String name,
+                       @Nullable Class<?>[] sClasses)
     {
         return findMethod(clazz, name, sClasses, mFactoryFilter);
     }
 
-    Field findField(Class<?> clazz,
-                    String name,
-                    Class<?> sClass)
+    @NonNull
+    Field findField(@NonNull Class<?> clazz,
+                    @NonNull String name,
+                    @NonNull Class<?> sClass)
     {
         return findField(clazz, name, sClass, mFieldFilter);
     }
 
-    Provider getProvider(String name)
+    @Nullable
+    Provider getProvider(@NonNull String name)
     {
         if (DependencyManager.OWNER.equals(name))
         {
@@ -217,7 +238,8 @@ final class AnalyzerEnv
         return mProviders.get(name);
     }
 
-    void addProvider(String name, Provider provider)
+
+    void addProvider(@NonNull String name, @NonNull Provider provider)
     {
         if (DependencyManager.OWNER.equals(name)
                 && !mProviders.containsKey(name))
@@ -233,8 +255,8 @@ final class AnalyzerEnv
     }
 
     @Nullable
-    String getAttrNoThrow(Element element,
-                          String attr)
+    String getAttrNoThrow(@NonNull Element element,
+                          @NonNull String attr)
     {
         mark(element);
         if (element.attributeCount() != 0)
@@ -248,15 +270,16 @@ final class AnalyzerEnv
         return null;
     }
 
-    Constructor<?> findConstructor(Class<?> clazz,
-                                   Class<?>[] classes)
+    @NonNull
+    Constructor<?> findConstructor(@NonNull Class<?> clazz,
+                                   @Nullable Class<?>[] classes)
     {
         return findConstructor(clazz, classes, null);
     }
 
     @NonNull
-    String getAttrIfEmptyThrow(Element element,
-                               String attr)
+    String getAttrIfEmptyThrow(@NonNull Element element,
+                               @NonNull String attr)
     {
         mark(element);
         String name = getAttrNoThrow(element, attr);
@@ -267,18 +290,28 @@ final class AnalyzerEnv
         throw fromMessageThrow(String.format("Attr %s no found", name));
     }
 
-    RuntimeException fromMessageThrow(String massage)
+    @NonNull
+    RuntimeException fromMessageThrow(@NonNull String massage)
     {
         return new GenerateDepartmentException(String.format(
-                "Error in %s ", mCurrentNode.asXML())
+                "Error in %s ", mCurrent.asXML())
                 + (TextUtils.isEmpty(massage)
                 ? ""
                 : String.format(", message = %s", massage)));
     }
 
+    @NonNull
+    RuntimeException
+    formExceptionThrow(@NonNull Throwable e)
+    {
+        return new GenerateDepartmentException(
+                String.format("Error in %s\n ",
+                        mCurrent.asXML()), e);
+    }
+
     //静态包内
 
-    static void inject(Object object, DependencyManager dependency)
+    static void inject(@NonNull Object object, @NonNull DependencyManager dependency)
     {
         Class<?> type = object.getClass();
         Set<Class<?>> baseTypes = new ArraySet<>();
@@ -348,23 +381,25 @@ final class AnalyzerEnv
         }
     }
 
-    static int[] getResIds(Object owner)
+    @Nullable
+    static int[] getResIds(@NonNull Object owner)
     {
         Using using = owner.getClass().getAnnotation(Using.class);
         return using == null ? null : using.value();
     }
 
-    static boolean listNoEmpty(List<?> list)
+    static boolean listNoEmpty(@Nullable List<?> list)
     {
         return list != null && list.size() != 0;
     }
 
-    static Setter newSetter(final Method method, final String name)
+    @NonNull
+    static Setter newSetter(@NonNull final Method method, @NonNull final String name)
     {
         return new Setter()
         {
             @Override
-            public void set(Object target, DependencyManager dependency)
+            public void set(@NonNull Object target, @NonNull DependencyManager dependency)
             {
                 try
                 {
@@ -379,12 +414,13 @@ final class AnalyzerEnv
         };
     }
 
-    static Setter newSetter(final Field field, final String name)
+    @NonNull
+    static Setter newSetter(@NonNull final Field field, @NonNull final String name)
     {
         return new Setter()
         {
             @Override
-            public void set(Object target, DependencyManager dependency)
+            public void set(@NonNull Object target, @NonNull DependencyManager dependency)
             {
                 field.setAccessible(true);
                 try
@@ -399,15 +435,16 @@ final class AnalyzerEnv
         };
     }
 
+    @NonNull
     @SuppressWarnings("unchecked")
-    static Factory newFactory(final Method method,
-                              final List<String> references)
+    static Factory newFactory(@NonNull final Method method,
+                              @NonNull final List<String> references)
     {
         return new Factory()
         {
             @NonNull
             @Override
-            public <T> T newInstance(DependencyManager dependency)
+            public <T> T newInstance(@NonNull DependencyManager dependency)
             {
                 method.setAccessible(true);
                 try
@@ -434,16 +471,16 @@ final class AnalyzerEnv
         };
     }
 
-
-    static Factory newFactory(final Constructor<?> constructor,
-                              final List<String> references)
+    @NonNull
+    static Factory newFactory(@NonNull final Constructor<?> constructor,
+                              @NonNull final List<String> references)
     {
         return new Factory()
         {
             @SuppressWarnings("unchecked")
             @NonNull
             @Override
-            public <T> T newInstance(DependencyManager dependency)
+            public <T> T newInstance(@NonNull DependencyManager dependency)
             {
                 constructor.setAccessible(true);
                 try
@@ -473,8 +510,10 @@ final class AnalyzerEnv
         };
     }
 
+    @NonNull
     @SuppressWarnings("unchecked")
-    private static <T> T castTo(Object obj, Class<T> targetClass)
+    private static <T> T castTo(@NonNull Object obj,
+                                @NonNull Class<T> targetClass)
     {
         //处理引用类型和可赋值类型
         Class<?> objClass = obj.getClass();
@@ -492,7 +531,8 @@ final class AnalyzerEnv
                 targetClass.getName()));
     }
 
-    private static boolean isAssignTo(Class<?> objClass, Class<?> targetClass)
+    private static boolean isAssignTo(@NonNull Class<?> objClass,
+                                      @NonNull Class<?> targetClass)
     {
         if (targetClass.isAssignableFrom(objClass))
         {
@@ -503,10 +543,11 @@ final class AnalyzerEnv
 
     //实例私有
 
-    private Field findField(Class<?> clazz,
-                            String name,
-                            Class<?> sClass,
-                            Filter<Field> filter)
+    @NonNull
+    private Field findField(@NonNull Class<?> clazz,
+                            @NonNull String name,
+                            @NonNull Class<?> sClass,
+                            @Nullable Filter<Field> filter)
     {
         Field field = null;
         try
@@ -530,10 +571,11 @@ final class AnalyzerEnv
         }
     }
 
-    private Method findMethod(Class<?> clazz,
-                              String name,
-                              Class<?>[] sClasses,
-                              Filter<Method> filter)
+    @NonNull
+    private Method findMethod(@NonNull Class<?> clazz,
+                              @NonNull String name,
+                              @Nullable Class<?>[] sClasses,
+                              @Nullable Filter<Method> filter)
     {
         if (sClasses == null)
         {
@@ -577,9 +619,10 @@ final class AnalyzerEnv
                 Arrays.toString(sClasses)));
     }
 
-    private Constructor<?> findConstructor(Class<?> clazz,
-                                           Class<?>[] sClasses,
-                                           Filter<Constructor<?>> filter)
+    @NonNull
+    private Constructor<?> findConstructor(@NonNull Class<?> clazz,
+                                           @Nullable Class<?>[] sClasses,
+                                           @Nullable Filter<Constructor<?>> filter)
     {
         if (sClasses == null)
         {
@@ -620,12 +663,6 @@ final class AnalyzerEnv
                 clazz));
     }
 
-    private RuntimeException
-    formExceptionThrow(Throwable e)
-    {
-        return new GenerateDepartmentException(
-                String.format("Error in %s", mCurrentNode.asXML()), e);
-    }
 
     //静态私有
 
@@ -709,6 +746,7 @@ final class AnalyzerEnv
         return result;
     }
 
+    @NonNull
     private static List<TextConverter> newTextConverters()
     {
         List<TextConverter> result = new LinkedList<>();
@@ -761,9 +799,9 @@ final class AnalyzerEnv
     }
 
     @NonNull
-    private static Object[] getReferences(List<String> refs,
-                                          Class<?>[] targetClasses,
-                                          DependencyManager dependency)
+    private static Object[] getReferences(@NonNull List<String> refs,
+                                          @NonNull Class<?>[] targetClasses,
+                                          @NonNull DependencyManager dependency)
     {
         Object[] args = new Object[refs.size()];
         for (int i = 0; i < refs.size(); i++)
@@ -782,7 +820,7 @@ final class AnalyzerEnv
         {
             @NonNull
             @Override
-            public <T> T newInstance(DependencyManager dependencyManager)
+            public <T> T newInstance(@NonNull DependencyManager dependencyManager)
             {
                 return (T) nonNull;
             }

@@ -1,6 +1,8 @@
 package org.kexie.android.liteporj;
 
+import android.support.annotation.NonNull;
+
 interface Setter
 {
-    void set(Object target, DependencyManager dependency);
+    void set(@NonNull Object target,@NonNull DependencyManager dependency);
 }

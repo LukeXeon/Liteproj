@@ -2,10 +2,10 @@ package org.kexie.android.liteporj;
 
 import android.support.annotation.NonNull;
 
-public interface Factory
+interface Factory
 {
     @NonNull
-    <T> T newInstance(DependencyManager dependencyManager);
+    <T> T newInstance(@NonNull DependencyManager dependencyManager);
 
     @NonNull
     Class<?> getResultType();

@@ -18,7 +18,7 @@ public class LiteViewModel
     {
         super(application);
         mRegistry = new LifecycleRegistry(this);
-        mRegistry.addObserver(Liteproj.getLifecycleHandler());
+        mRegistry.addObserver(LiteprojInitializer.sLifecycleHandler);
         mRegistry.markState(Lifecycle.State.CREATED);
     }
 
@@ -28,7 +28,7 @@ public class LiteViewModel
     {
         super.onCleared();
         mRegistry.markState(Lifecycle.State.DESTROYED);
-        mRegistry.removeObserver(Liteproj.getLifecycleHandler());
+        mRegistry.removeObserver(LiteprojInitializer.sLifecycleHandler);
     }
 
     @NonNull

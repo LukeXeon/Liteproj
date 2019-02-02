@@ -10,7 +10,7 @@ public class LiteService extends LifecycleService
     public void onCreate()
     {
         super.onCreate();
-        getLifecycle().addObserver(Liteproj.getLifecycleHandler());
+        getLifecycle().addObserver(LiteprojInitializer.sLifecycleHandler);
     }
 
     @CallSuper
@@ -18,6 +18,6 @@ public class LiteService extends LifecycleService
     public void onDestroy()
     {
         super.onDestroy();
-        getLifecycle().removeObserver(Liteproj.getLifecycleHandler());
+        getLifecycle().removeObserver(LiteprojInitializer.sLifecycleHandler);
     }
 }
