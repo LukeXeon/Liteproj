@@ -1,4 +1,4 @@
-# liteproj
+# Liteproj
 - 历经半个学期我的开源框架终于发布了Preview版本，这个开源框架是一个运行在Android上的控制反转（IoC）容器，能够帮助你自动的管理类的依赖并提供依赖注入（DI）。
 - 与绝大多数Android插件相同，它使用Gradle进行构建，若想要使用它你需要在build.gradle文件中添加如下代码。
 
