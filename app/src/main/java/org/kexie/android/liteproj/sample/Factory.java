@@ -1,6 +1,4 @@
-package org.kexie.android.arch.sample;
-
-import com.orhanobut.logger.Logger;
+package org.kexie.android.liteproj.sample;
 
 public class Factory
 {

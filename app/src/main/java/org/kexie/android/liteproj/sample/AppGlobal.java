@@ -1,4 +1,4 @@
-package org.kexie.android.arch.sample;
+package org.kexie.android.liteproj.sample;
 
 import android.app.Application;
 

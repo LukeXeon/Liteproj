@@ -1,4 +1,4 @@
-package org.kexie.android.liteporj;
+package org.kexie.android.liteproj;
 
 import android.support.annotation.NonNull;
 

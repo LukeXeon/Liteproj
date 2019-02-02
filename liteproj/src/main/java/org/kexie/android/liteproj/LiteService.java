@@ -1,4 +1,4 @@
-package org.kexie.android.liteporj;
+package org.kexie.android.liteproj;
 
 import android.arch.lifecycle.LifecycleService;
 import android.support.annotation.CallSuper;

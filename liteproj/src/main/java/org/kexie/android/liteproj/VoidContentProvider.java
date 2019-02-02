@@ -1,4 +1,4 @@
-package org.kexie.android.liteporj;
+package org.kexie.android.liteproj;
 
 import android.content.ContentProvider;
 import android.content.ContentValues;

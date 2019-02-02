@@ -1,4 +1,4 @@
-package org.kexie.android.liteporj;
+package org.kexie.android.liteproj;
 
 import android.app.Application;
 import android.support.annotation.NonNull;
@@ -135,11 +135,10 @@ final class AnalyzerEnv
         this.mCurrent = currentNode;
     }
 
-
     @NonNull
     Class<?> getResultTypeIfNullThrow(@NonNull String name)
     {
-        Provider provider = mProviders.get(name);
+        Provider provider = getProvider(name);
         if (provider != null)
         {
             return provider.getResultType();

@@ -1,9 +1,7 @@
-package org.kexie.android.liteporj;
+package org.kexie.android.liteproj;
 
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.RawRes;
 import android.support.v4.util.LruCache;

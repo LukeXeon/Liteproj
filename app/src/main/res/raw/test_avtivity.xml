@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<scope owner="org.kexie.android.arch.sample.MainActivity">
+<scope owner="org.kexie.android.liteproj.sample.MainActivity">
     <var
         name="bean"
-        class="org.kexie.android.arch.sample.Bean"
+        class="org.kexie.android.liteproj.sample.Bean"
         provider="singleton"/>
     <var
         name="factory"
-        class="org.kexie.android.arch.sample.Factory"
+        class="org.kexie.android.liteproj.sample.Factory"
         provider="factory">
         <new name="test">
             <arg let="@xxxxxxxx"/>
