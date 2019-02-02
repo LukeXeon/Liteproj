@@ -4,7 +4,7 @@
     <application>
         <provider
             android:authorities="${applicationId}.liteproj-initializer"
-            android:name=".LiteprojInitializer"
+            android:name="org.kexie.android.liteporj.LiteprojInitializer"
             android:exported="false"
             android:multiprocess="true"/>
     </application>

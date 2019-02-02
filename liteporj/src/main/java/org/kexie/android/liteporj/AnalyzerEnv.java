@@ -35,6 +35,11 @@ final class AnalyzerEnv
         Object castTo(@NonNull Object obj);
     }
 
+    private interface Filter<T>
+    {
+        boolean filter(@NonNull T item);
+    }
+
     private interface TextConverter
     {
         @NonNull

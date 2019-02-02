@@ -120,14 +120,13 @@ public final class DependencyManager
         return result;
     }
 
-
     //构造函数
     DependencyManager(@NonNull Object owner,
                       @NonNull List<Dependency> dependencies)
     {
         mOwnerType = owner.getClass();
-        mOwner = new WeakReference<>(owner);
         mManagers = merge(owner, dependencies);
+        mOwner = new WeakReference<>(owner);
     }
 
     //返回持有者，若持有者已经被释放，则报错

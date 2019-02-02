@@ -18,24 +18,29 @@ final class DependencyProvider implements Provider
     }
 
     @NonNull
+    @SuppressWarnings({"unchecked"})
     @Override
     public <T> T provide(@NonNull DependencyManager dependencyManager)
     {
-        return null;
+        Object target = mFactory.newInstance(dependencyManager);
+        for (Setter setter : mSetters)
+        {
+            setter.set(target, dependencyManager);
+        }
+        return (T) target;
     }
 
-
-    @NonNull
     @Override
+    @NonNull
     public DependencyType getType()
     {
-        return null;
+        return mType;
     }
 
-    @NonNull
     @Override
+    @NonNull
     public Class<?> getResultType()
     {
-        return null;
+        return mFactory.getResultType();
     }
 }
