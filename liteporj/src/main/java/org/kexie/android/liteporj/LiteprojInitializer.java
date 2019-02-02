@@ -48,16 +48,16 @@ public final class LiteprojInitializer
             sFragmentCallbacks = new FragmentManager.FragmentLifecycleCallbacks()
     {
         @Override
-        public void onFragmentAttached(FragmentManager fm,
-                                       Fragment f,
-                                       Context context)
+        public void onFragmentAttached(@NonNull FragmentManager fm,
+                                       @NonNull Fragment f,
+                                       @NonNull Context context)
         {
             onDependencyAttach(f);
         }
 
         @Override
-        public void onFragmentDestroyed(FragmentManager fm,
-                                        Fragment f)
+        public void onFragmentDestroyed(@NonNull FragmentManager fm,
+                                        @NonNull Fragment f)
         {
             onDependencyDestroy(f);
         }

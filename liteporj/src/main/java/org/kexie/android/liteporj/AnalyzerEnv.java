@@ -20,6 +20,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -181,7 +182,7 @@ final class AnalyzerEnv
             return new DependencyProvider(
                     DependencyType.SINGLETON,
                     newSingleton(value),
-                    null
+                    Collections.<Setter>emptyList()
             );
         } else
         {
@@ -192,7 +193,7 @@ final class AnalyzerEnv
                     return new DependencyProvider(
                             DependencyType.SINGLETON,
                             newSingleton(valueOf.valueOf(value)),
-                            null
+                            Collections.<Setter>emptyList()
                     );
                 } catch (NumberFormatException ignored)
                 {

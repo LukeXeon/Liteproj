@@ -10,7 +10,9 @@ final class DependencyProvider implements Provider
     private final Factory mFactory;
     private final List<Setter> mSetters;
 
-    DependencyProvider(DependencyType type, Factory factory, List<Setter> setters)
+    DependencyProvider(@NonNull DependencyType type,
+                       @NonNull Factory factory,
+                       @NonNull List<Setter> setters)
     {
         this.mType = type;
         this.mFactory = factory;

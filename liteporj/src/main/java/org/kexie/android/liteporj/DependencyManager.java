@@ -5,6 +5,7 @@ import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.util.ArrayMap;
+import android.support.v4.util.ArraySet;
 
 import java.lang.ref.WeakReference;
 import java.util.LinkedList;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.WeakHashMap;
 
 //依赖管理器
@@ -42,6 +44,29 @@ public final class DependencyManager
     private Map<Dependency, DependencyManager>
     merge(@NonNull Object owner, @NonNull List<Dependency> dependencies)
     {
+        //check
+        if (dependencies.size() > 1)
+        {
+            Set<String> set = dependencies.get(0).getNames();
+            Set<String> result = new ArraySet<>();
+            for (Dependency relation : dependencies
+                    .subList(1, dependencies.size()))
+            {
+                Set<String> newSet = relation.getNames();
+                result.addAll(set);
+                result.retainAll(newSet);
+                if (result.size() == 0)
+                {
+                    set.addAll(newSet);
+                } else
+                {
+                    throw new GenerateDepartmentException(
+                            String.format(
+                                    "Dependency conflicts occur during Mergers set = %s",
+                                    result.toString()));
+                }
+            }
+        }
         Map<Dependency, DependencyManager> managers = new ArrayMap<>();
         for (Dependency dependency : dependencies)
         {
@@ -58,7 +83,8 @@ public final class DependencyManager
             } else if (owner instanceof Fragment)
             {
                 managers.putAll(mergeUpper(
-                        ((Fragment) owner).getActivity(),
+                        Objects.requireNonNull(((Fragment) owner)
+                                .getActivity()),
                         dependencies));
             } else if (owner instanceof LiteViewModel)
             {
@@ -114,7 +140,8 @@ public final class DependencyManager
                     dependencies));
         } else if (owner instanceof Fragment)
         {
-            result.putAll(mergeUpper(((Fragment) owner).getActivity(),
+            result.putAll(mergeUpper(Objects.requireNonNull(((Fragment) owner)
+                            .getActivity()),
                     dependencies));
         }
         return result;
