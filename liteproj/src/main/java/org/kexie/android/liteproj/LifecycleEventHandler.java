@@ -86,14 +86,14 @@ final class LifecycleEventHandler
                     int modifiers = field.getModifiers();
                     if (!Modifier.isFinal(modifiers)
                             && !Modifier.isStatic(modifiers)
-                            && AnalyzerEnv.isAssignTo(
+                            && TypeUtil.isAssignTo(
                             dependency.getResultType(reference.value()),
                             field.getType()))
                     {
                         field.setAccessible(true);
                         try
                         {
-                            field.set(object, AnalyzerEnv.castTo(
+                            field.set(object, TypeUtil.castTo(
                                     dependency.get(reference.value()),
                                     field.getType()));
                         } catch (Exception e)
@@ -116,7 +116,7 @@ final class LifecycleEventHandler
                             && parameterTypes.length == 1
                             && !Modifier.isStatic(modifiers)
                             && !Modifier.isAbstract(modifiers)
-                            && AnalyzerEnv.isAssignTo(dependency
+                            && TypeUtil.isAssignTo(dependency
                                     .getResultType(reference.value()),
                             parameterTypes[0]))
                     {
@@ -124,7 +124,7 @@ final class LifecycleEventHandler
                         try
                         {
                             property.invoke(object,
-                                    AnalyzerEnv.castTo(dependency.get(reference.value()),
+                                    TypeUtil.castTo(dependency.get(reference.value()),
                                             parameterTypes[0]));
                         } catch (Exception e)
                         {
@@ -159,7 +159,7 @@ final class LifecycleEventHandler
             }
 
             DependencyManager manager = null;
-            int[] resIds = AnalyzerEnv.getResIds(owner);
+            int[] resIds = TypeUtil.getResIds(owner.getClass());
             if (resIds != null && resIds.length != 0)
             {
                 List<Dependency> dependencies = new LinkedList<>();
@@ -172,7 +172,7 @@ final class LifecycleEventHandler
             DependencyManager.sTable.put(owner, manager);
             if (manager != null)
             {
-                LifecycleEventHandler.inject(owner, manager);
+                inject(owner, manager);
             }
         }
     }

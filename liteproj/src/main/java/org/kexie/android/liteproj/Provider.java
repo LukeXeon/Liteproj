@@ -12,4 +12,18 @@ interface Provider
 
     @NonNull
     Class<?> getResultType();
+
+    interface Factory
+    {
+        @NonNull
+        <T> T newInstance(@NonNull DependencyManager dependencyManager);
+
+        @NonNull
+        Class<?> getResultType();
+    }
+
+    interface Setter
+    {
+        void set(@NonNull Object target, @NonNull DependencyManager dependency);
+    }
 }

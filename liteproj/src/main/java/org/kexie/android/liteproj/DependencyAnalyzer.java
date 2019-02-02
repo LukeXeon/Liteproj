@@ -5,6 +5,7 @@ import android.content.ContextWrapper;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
 import android.support.v4.util.LruCache;
 import android.text.TextUtils;
@@ -30,6 +31,11 @@ final class DependencyAnalyzer extends ContextWrapper
 
     private final LruCache<Integer, Dependency> mResultCache;
 
+    private static boolean listNoEmpty(@Nullable List<?> list)
+    {
+        return list != null && list.size() != 0;
+    }
+
     private int getCacheSize()
     {
         try
@@ -39,13 +45,11 @@ final class DependencyAnalyzer extends ContextWrapper
                             PackageManager.GET_SERVICES
                                     | PackageManager.GET_ACTIVITIES);
             int size = ((packageInfo.activities == null
-                    || packageInfo.activities.length == 0
-                    ? 1
+                    || packageInfo.activities.length == 0 ? 1
                     : packageInfo.activities.length)
                     * Runtime.getRuntime().availableProcessors()
                     + (packageInfo.services == null
-                    || packageInfo.services.length == 0
-                    ? 1
+                    || packageInfo.services.length == 0 ? 0
                     : packageInfo.services.length));
             Log.i(TAG, String.format("cache size = %d", size));
             return size;
@@ -114,10 +118,10 @@ final class DependencyAnalyzer extends ContextWrapper
         env.mark(element);
         Class<?> path = getClassAttr(env, element);
         List<Element> elements = element.elements();
-        List<Setter> setters = new LinkedList<>();
-        Factory factory = doSearchNew(env, element, path);
+        List<Provider.Setter> setters = new LinkedList<>();
+        Provider.Factory factory = doSearchNew(env, element, path);
         path = factory.getResultType();
-        if (AnalyzerEnv.listNoEmpty(elements))
+        if (listNoEmpty(elements))
         {
             for (Element item : elements)
             {
@@ -150,6 +154,7 @@ final class DependencyAnalyzer extends ContextWrapper
 
     private boolean isSingleton(AnalyzerEnv env, Element element)
     {
+        env.mark(element);
         String provider = env.getAttrNoThrow(element,
                 getString(R.string.provider_string));
         if (TextUtils.isEmpty(provider))
@@ -170,12 +175,13 @@ final class DependencyAnalyzer extends ContextWrapper
         }
     }
 
-    private Setter analysisField(AnalyzerEnv env, Element element, Class<?> path)
+    private Provider.Setter analysisField(AnalyzerEnv env, Element element, Class<?> path)
     {
+        env.mark(element);
         String name = env.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         String refOrLet = getRefOrLetAttr(env, element);
-        return AnalyzerEnv.newSetter(
+        return DependencyProvider.newSetter(
                 env.findField(path,
                         name,
                         env.getResultTypeIfNullThrow(refOrLet)),
@@ -183,12 +189,12 @@ final class DependencyAnalyzer extends ContextWrapper
     }
 
 
-    private Factory doSearchNew(AnalyzerEnv env, Element element, Class<?> path)
+    private Provider.Factory doSearchNew(AnalyzerEnv env, Element element, Class<?> path)
     {
         env.mark(element);
         List<Element> elements = element.elements();
-        Factory factory = null;
-        if (AnalyzerEnv.listNoEmpty(elements))
+        Provider.Factory factory = null;
+        if (listNoEmpty(elements))
         {
             for (Element item : elements)
             {
@@ -206,19 +212,20 @@ final class DependencyAnalyzer extends ContextWrapper
             }
         }
         return factory == null
-                ? AnalyzerEnv.newFactory(
+                ? DependencyProvider.newFactory(
                 env.findConstructor(path,
                         null),
                 Collections.<String>emptyList())
                 : factory;
     }
 
-    private Setter analysisProperty(AnalyzerEnv env, Element element, Class<?> path)
+    private Provider.Setter analysisProperty(AnalyzerEnv env, Element element, Class<?> path)
     {
+        env.mark(element);
         String name = env.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         String refOrLet = getRefOrLetAttr(env, element);
-        return AnalyzerEnv.newSetter(
+        return DependencyProvider.newSetter(
                 env.findProperty(
                         path,
                         name,
@@ -226,12 +233,12 @@ final class DependencyAnalyzer extends ContextWrapper
                 refOrLet);
     }
 
-    private Factory analysisNew(AnalyzerEnv env, Element element, Class<?> path)
+    private Provider.Factory analysisNew(AnalyzerEnv env, Element element, Class<?> path)
     {
         env.mark(element);
         List<Element> elements = element.elements();
         List<String> refOrLet = new LinkedList<>();
-        if (AnalyzerEnv.listNoEmpty(elements))
+        if (listNoEmpty(elements))
         {
             for (Element item : elements)
             {
@@ -259,7 +266,7 @@ final class DependencyAnalyzer extends ContextWrapper
                 ? isCustom : null;
         if (isCustom != null)
         {
-            return AnalyzerEnv.newFactory(
+            return DependencyProvider.newFactory(
                     env.findFactory(
                             path,
                             isCustom,
@@ -267,7 +274,7 @@ final class DependencyAnalyzer extends ContextWrapper
                     refOrLet);
         } else
         {
-            return AnalyzerEnv.newFactory(
+            return DependencyProvider.newFactory(
                     env.findConstructor(path,
                             classes)
                     , refOrLet);
@@ -276,13 +283,14 @@ final class DependencyAnalyzer extends ContextWrapper
 
     private String getRefOrLetAttr(AnalyzerEnv env, Element element)
     {
+        env.mark(element);
         String ref = env.getAttrNoThrow(element,
                 getString(R.string.ref_string));
         String let = env.getAttrNoThrow(element,
                 getString(R.string.let_string));
         if (ref != null)
         {
-            if (TextType.REFERENCE.equals(
+            if (AnalyzerEnv.TextType.REFERENCE.equals(
                     env.getTextType(ref)))
             {
                 return ref;
@@ -308,7 +316,7 @@ final class DependencyAnalyzer extends ContextWrapper
         env.mark(element);
         String let = env.getAttrIfEmptyThrow(element,
                 getString(R.string.let_string));
-        if (TextType.CONSTANT.equals(env.getTextType(let)))
+        if (AnalyzerEnv.TextType.CONSTANT.equals(env.getTextType(let)))
         {
             Provider provider = env.getProvider(let);
             if (provider == null)

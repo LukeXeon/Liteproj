@@ -3,7 +3,6 @@ package org.kexie.android.liteproj;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.ArrayMap;
-import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import org.dom4j.Attribute;
@@ -20,18 +19,11 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Pattern;
 
 final class AnalyzerEnv
 {
     private static final String TAG = "AnalyzerEnv";
-
-    private interface TypeConverter
-    {
-        @NonNull
-        Object castTo(@NonNull Object obj);
-    }
 
     private interface Filter<T>
     {
@@ -44,8 +36,12 @@ final class AnalyzerEnv
         Object valueOf(@NonNull String value);
     }
 
-    private static final Map<Pair<Class<?>, Class<?>>, TypeConverter>
-            sTypeConverters = newTypeConverters();
+    enum TextType
+    {
+        ILLEGAL,
+        CONSTANT,
+        REFERENCE,
+    }
 
     private Node mCurrent;
 
@@ -177,8 +173,8 @@ final class AnalyzerEnv
         {
             return new DependencyProvider(
                     DependencyType.SINGLETON,
-                    newSingleton(value),
-                    Collections.<Setter>emptyList()
+                    DependencyProvider.newSingleton(value),
+                    Collections.<Provider.Setter>emptyList()
             );
         } else
         {
@@ -188,8 +184,8 @@ final class AnalyzerEnv
                 {
                     return new DependencyProvider(
                             DependencyType.SINGLETON,
-                            newSingleton(valueOf.valueOf(value)),
-                            Collections.<Setter>emptyList()
+                            DependencyProvider.newSingleton(valueOf.valueOf(value)),
+                            Collections.<Provider.Setter>emptyList()
                     );
                 } catch (NumberFormatException ignored)
                 {
@@ -311,168 +307,6 @@ final class AnalyzerEnv
                         mCurrent.asXML()), e);
     }
 
-    //静态包内
-
-    @Nullable
-    static int[] getResIds(@NonNull Object owner)
-    {
-        Using using = owner.getClass().getAnnotation(Using.class);
-        return using == null ? null : using.value();
-    }
-
-    static boolean listNoEmpty(@Nullable List<?> list)
-    {
-        return list != null && list.size() != 0;
-    }
-
-    @NonNull
-    static Setter newSetter(@NonNull final Method method, @NonNull final String name)
-    {
-        return new Setter()
-        {
-            @Override
-            public void set(@NonNull Object target, @NonNull DependencyManager dependency)
-            {
-                try
-                {
-                    method.setAccessible(true);
-                    method.invoke(target, castTo(dependency.get(name),
-                            method.getParameterTypes()[0]));
-                } catch (Exception e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
-    }
-
-    @NonNull
-    static Setter newSetter(@NonNull final Field field, @NonNull final String name)
-    {
-        return new Setter()
-        {
-            @Override
-            public void set(@NonNull Object target, @NonNull DependencyManager dependency)
-            {
-                field.setAccessible(true);
-                try
-                {
-                    field.set(target, castTo(dependency.get(name),
-                            field.getType()));
-                } catch (IllegalAccessException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-        };
-    }
-
-    @NonNull
-    @SuppressWarnings("unchecked")
-    static Factory newFactory(@NonNull final Method method,
-                              @NonNull final List<String> references)
-    {
-        return new Factory()
-        {
-            @NonNull
-            @Override
-            public <T> T newInstance(@NonNull DependencyManager dependency)
-            {
-                method.setAccessible(true);
-                try
-                {
-                    return (T) method.invoke(null,
-                            getReferences(references,
-                                    method.getParameterTypes(),
-                                    dependency
-                            )
-                    );
-                } catch (IllegalAccessException
-                        | InvocationTargetException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @NonNull
-            @Override
-            public Class<?> getResultType()
-            {
-                return method.getReturnType();
-            }
-        };
-    }
-
-    @NonNull
-    static Factory newFactory(@NonNull final Constructor<?> constructor,
-                              @NonNull final List<String> references)
-    {
-        return new Factory()
-        {
-            @SuppressWarnings("unchecked")
-            @NonNull
-            @Override
-            public <T> T newInstance(@NonNull DependencyManager dependency)
-            {
-                constructor.setAccessible(true);
-                try
-                {
-                    return (T) constructor.newInstance(
-                            getReferences(
-                                    references,
-                                    constructor.getParameterTypes(),
-                                    dependency
-                            )
-                    );
-                } catch (IllegalAccessException
-                        | InvocationTargetException
-                        | InstantiationException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            @NonNull
-            @Override
-            public Class<?> getResultType()
-            {
-                return constructor.getDeclaringClass();
-            }
-
-        };
-    }
-
-    @NonNull
-    @SuppressWarnings("unchecked")
-    static <T> T castTo(@NonNull Object obj,
-                        @NonNull Class<T> targetClass)
-    {
-        //处理引用类型和可赋值类型
-        Class<?> objClass = obj.getClass();
-        if (targetClass.isAssignableFrom(objClass))
-        {
-            return (T) obj;
-        }
-        TypeConverter castTo = sTypeConverters.get(Pair.create(objClass, targetClass));
-        if (castTo != null)
-        {
-            return (T) castTo.castTo(obj);
-        }
-        throw new ClassCastException(String.format("Can not cast %s to %s",
-                objClass.getName(),
-                targetClass.getName()));
-    }
-
-    static boolean isAssignTo(@NonNull Class<?> objClass,
-                              @NonNull Class<?> targetClass)
-    {
-        if (targetClass.isAssignableFrom(objClass))
-        {
-            return true;
-        }
-        return sTypeConverters.get(Pair.create(objClass, targetClass)) != null;
-    }
-
     //实例私有
 
     @NonNull
@@ -489,7 +323,7 @@ final class AnalyzerEnv
         {
             throw formExceptionThrow(e);
         }
-        if (isAssignTo(sClass, field.getType())
+        if (TypeUtil.isAssignTo(sClass, field.getType())
                 && (filter == null || filter.filter(field)))
         {
             return field;
@@ -529,7 +363,7 @@ final class AnalyzerEnv
             {
                 for (int i = 0; i < pram.length; i++)
                 {
-                    if (!isAssignTo(sClasses[i], pram[i]))
+                    if (!TypeUtil.isAssignTo(sClasses[i], pram[i]))
                     {
                         match = false;
                         break;
@@ -575,7 +409,7 @@ final class AnalyzerEnv
             {
                 for (int i = 0; i < pram.length; i++)
                 {
-                    if (!isAssignTo(sClasses[i], pram[i]))
+                    if (!TypeUtil.isAssignTo(sClasses[i], pram[i]))
                     {
                         match = false;
                         break;
@@ -595,88 +429,7 @@ final class AnalyzerEnv
                 clazz));
     }
 
-
     //静态私有
-
-    private static boolean isFloatType(@NonNull Class<?> type)
-    {
-        return Float.class.equals(type) || Double.class.equals(type);
-    }
-
-    @NonNull
-    private static Map<Pair<Class<?>, Class<?>>, TypeConverter> newTypeConverters()
-    {
-        TypeConverter castToThis = new TypeConverter()
-        {
-            @NonNull
-            @Override
-            public Object castTo(@NonNull Object obj)
-            {
-                return obj;
-            }
-        };
-        ArrayMap<Pair<Class<?>, Class<?>>, TypeConverter> result = new ArrayMap<>();
-        result.put(Pair.<Class<?>, Class<?>>
-                create(Boolean.class, Boolean.TYPE), castToThis);
-        result.put(Pair.<Class<?>, Class<?>>
-                create(Character.class, Character.TYPE), castToThis);
-        Class<?>[] numberTypes = new Class<?>[]{
-                Byte.class,
-                Short.class,
-                Integer.class,
-                Long.class,
-                Float.class,
-                Double.class
-        };
-        for (Class<?> sourceType : numberTypes)
-        {
-            for (Class<?> targetType : numberTypes)
-            {
-                try
-                {
-                    final Class<?> rawTargetType = (Class<?>) targetType
-                            .getField("TYPE")
-                            .get(null);
-                    if (sourceType.equals(targetType))
-                    {
-                        result.put(Pair.<Class<?>, Class<?>>
-                                create(sourceType, rawTargetType), castToThis);
-                        continue;
-                    }
-                    int sourceSize = sourceType.getField("SIZE").getInt(null);
-                    int targetSize = targetType.getField("SIZE").getInt(null);
-                    if (sourceSize < targetSize
-                            && !(isFloatType(sourceType)
-                            && !isFloatType(targetType)))
-                    {
-                        result.put(Pair.<Class<?>, Class<?>>
-                                        create(sourceType, rawTargetType),
-                                new TypeConverter()
-                                {
-                                    @NonNull
-                                    @Override
-                                    public Object castTo(@NonNull Object obj)
-                                    {
-                                        try
-                                        {
-                                            return obj.getClass().getMethod(
-                                                    rawTargetType.getName()
-                                                            + "Value").invoke(obj);
-                                        } catch (Exception e)
-                                        {
-                                            throw new AssertionError(e);
-                                        }
-                                    }
-                                });
-                    }
-                } catch (Exception e)
-                {
-                    throw new AssertionError(e);
-                }
-            }
-        }
-        return result;
-    }
 
     @NonNull
     private static List<TextConverter> newTextConverters()
@@ -736,41 +489,5 @@ final class AnalyzerEnv
             });
         }
         return result;
-    }
-
-    @NonNull
-    private static Object[] getReferences(@NonNull List<String> refs,
-                                          @NonNull Class<?>[] targetClasses,
-                                          @NonNull DependencyManager dependency)
-    {
-        Object[] args = new Object[refs.size()];
-        for (int i = 0; i < refs.size(); i++)
-        {
-            String name = refs.get(i);
-            args[i] = castTo(dependency.get(name), targetClasses[i]);
-        }
-        return args;
-    }
-
-    @SuppressWarnings("unchecked")
-    private static Factory newSingleton(Object object)
-    {
-        final Object nonNull = Objects.requireNonNull(object);
-        return new Factory()
-        {
-            @NonNull
-            @Override
-            public <T> T newInstance(@NonNull DependencyManager dependencyManager)
-            {
-                return (T) nonNull;
-            }
-
-            @NonNull
-            @Override
-            public Class<?> getResultType()
-            {
-                return nonNull.getClass();
-            }
-        };
     }
 }
