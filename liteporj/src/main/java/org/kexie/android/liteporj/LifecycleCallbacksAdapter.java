@@ -3,10 +3,8 @@ package org.kexie.android.liteporj;
 import android.app.Activity;
 import android.app.Application;
 import android.os.Bundle;
-import android.support.v4.app.FragmentManager;
 
-public abstract class MergeLifecycleCallbacks
-        extends FragmentManager.FragmentLifecycleCallbacks
+public abstract class LifecycleCallbacksAdapter
         implements Application.ActivityLifecycleCallbacks
 {
     @Override

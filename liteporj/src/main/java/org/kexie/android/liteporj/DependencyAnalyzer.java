@@ -14,20 +14,29 @@ final class DependencyAnalyzer extends ContextWrapper
 
     private final LruCache<Integer, Dependency> mResultCache;
 
-    public DependencyAnalyzer(Context base)
+    private int getCacheSize()
     {
-        super(base.getApplicationContext());
         try
         {
             PackageInfo packageInfo = getPackageManager()
                     .getPackageInfo(getPackageName(),
-                    PackageManager.GET_SERVICES
-                            & PackageManager.GET_ACTIVITIES);
-            mResultCache = new LruCache<>(packageInfo.activities.length
-                    + packageInfo.services.length);
+                            PackageManager.GET_SERVICES
+                                    & PackageManager.GET_ACTIVITIES);
+            return packageInfo.activities.length
+                    + packageInfo.services.length;
         } catch (Exception e)
         {
             throw new AssertionError(e);
         }
     }
+
+    public DependencyAnalyzer(Context base)
+    {
+        super(base.getApplicationContext());
+        mResultCache = new LruCache<>(getCacheSize());
+    }
+
+
+
+
 }
