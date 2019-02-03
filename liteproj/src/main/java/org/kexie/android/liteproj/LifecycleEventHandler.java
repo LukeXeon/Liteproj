@@ -86,14 +86,14 @@ final class LifecycleEventHandler
                     int modifiers = field.getModifiers();
                     if (!Modifier.isFinal(modifiers)
                             && !Modifier.isStatic(modifiers)
-                            && TypeUtil.isAssignTo(
+                            && TypeUtil.isAssignToType(
                             dependency.getResultType(reference.value()),
                             field.getType()))
                     {
                         field.setAccessible(true);
                         try
                         {
-                            field.set(object, TypeUtil.castTo(
+                            field.set(object, TypeUtil.castToType(
                                     dependency.get(reference.value()),
                                     field.getType()));
                         } catch (Exception e)
@@ -116,7 +116,7 @@ final class LifecycleEventHandler
                             && parameterTypes.length == 1
                             && !Modifier.isStatic(modifiers)
                             && !Modifier.isAbstract(modifiers)
-                            && TypeUtil.isAssignTo(dependency
+                            && TypeUtil.isAssignToType(dependency
                                     .getResultType(reference.value()),
                             parameterTypes[0]))
                     {
@@ -124,7 +124,7 @@ final class LifecycleEventHandler
                         try
                         {
                             property.invoke(object,
-                                    TypeUtil.castTo(dependency.get(reference.value()),
+                                    TypeUtil.castToType(dependency.get(reference.value()),
                                             parameterTypes[0]));
                         } catch (Exception e)
                         {
@@ -159,7 +159,7 @@ final class LifecycleEventHandler
             }
 
             DependencyManager manager = null;
-            int[] resIds = TypeUtil.getResIds(owner.getClass());
+            int[] resIds = TypeUtil.getTypeUsingResources(owner.getClass());
             if (resIds != null && resIds.length != 0)
             {
                 List<Dependency> dependencies = new LinkedList<>();

@@ -35,7 +35,7 @@ final class DependencyProvider implements Provider
                 try
                 {
                     method.setAccessible(true);
-                    method.invoke(target, TypeUtil.castTo(dependency.get(name),
+                    method.invoke(target, TypeUtil.castToType(dependency.get(name),
                             method.getParameterTypes()[0]));
                 } catch (Exception e)
                 {
@@ -56,7 +56,7 @@ final class DependencyProvider implements Provider
                 field.setAccessible(true);
                 try
                 {
-                    field.set(target, TypeUtil.castTo(dependency.get(name),
+                    field.set(target, TypeUtil.castToType(dependency.get(name),
                             field.getType()));
                 } catch (IllegalAccessException e)
                 {
@@ -150,7 +150,7 @@ final class DependencyProvider implements Provider
         for (int i = 0; i < refs.size(); i++)
         {
             String name = refs.get(i);
-            args[i] = TypeUtil.castTo(dependency.get(name), targetClasses[i]);
+            args[i] = TypeUtil.castToType(dependency.get(name), targetClasses[i]);
         }
         return args;
     }

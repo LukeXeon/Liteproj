@@ -182,7 +182,7 @@ final class DependencyAnalyzer extends ContextWrapper
                 getString(R.string.name_string));
         String refOrLet = getRefOrLetAttr(env, element);
         return DependencyProvider.newSetter(
-                env.findField(path,
+                TypeUtil.getTypeField(path,
                         name,
                         env.getResultTypeIfNullThrow(refOrLet)),
                 refOrLet);
@@ -213,7 +213,7 @@ final class DependencyAnalyzer extends ContextWrapper
         }
         return factory == null
                 ? DependencyProvider.newFactory(
-                env.findConstructor(path,
+                TypeUtil.getTypeConstructor(path,
                         null),
                 Collections.<String>emptyList())
                 : factory;
@@ -226,7 +226,7 @@ final class DependencyAnalyzer extends ContextWrapper
                 getString(R.string.name_string));
         String refOrLet = getRefOrLetAttr(env, element);
         return DependencyProvider.newSetter(
-                env.findProperty(
+                TypeUtil.getTypeProperty(
                         path,
                         name,
                         env.getResultTypeIfNullThrow(refOrLet)),
@@ -267,7 +267,7 @@ final class DependencyAnalyzer extends ContextWrapper
         if (isCustom != null)
         {
             return DependencyProvider.newFactory(
-                    env.findFactory(
+                    TypeUtil.getTypeFactory(
                             path,
                             isCustom,
                             classes),
@@ -275,7 +275,7 @@ final class DependencyAnalyzer extends ContextWrapper
         } else
         {
             return DependencyProvider.newFactory(
-                    env.findConstructor(path,
+                    TypeUtil.getTypeConstructor(path,
                             classes)
                     , refOrLet);
         }

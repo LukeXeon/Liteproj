@@ -9,12 +9,7 @@ import org.dom4j.Attribute;
 import org.dom4j.Element;
 import org.dom4j.Node;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,11 +19,6 @@ import java.util.regex.Pattern;
 final class AnalyzerEnv
 {
     private static final String TAG = "AnalyzerEnv";
-
-    private interface Filter<T>
-    {
-        boolean filter(@NonNull T item);
-    }
 
     private interface TextConverter
     {
@@ -53,37 +43,6 @@ final class AnalyzerEnv
 
     private final Pattern mNamePattern = Pattern
             .compile("[\u4e00-\u9fa5_A-Za-z][\u4e00-\u9fa5_A-Za-z0-9]*");
-
-    private final Filter<Method> mPropertyFilter = new Filter<Method>()
-    {
-        @Override
-        public boolean filter(@NonNull Method item)
-        {
-            return void.class.equals(item.getReturnType())
-                    && !Modifier.isStatic(item.getModifiers());
-        }
-    };
-
-    private final Filter<Method> mFactoryFilter = new Filter<Method>()
-    {
-        @Override
-        public boolean filter(@NonNull Method item)
-        {
-            return Modifier.isStatic(item.getModifiers())
-                    && !void.class
-                    .equals(item.getReturnType());
-        }
-    };
-
-    private final Filter<Field> mFieldFilter = new Filter<Field>()
-    {
-        @Override
-        public boolean filter(@NonNull Field item)
-        {
-            return !Modifier.isFinal(item.getModifiers())
-                    && !Modifier.isStatic(item.getModifiers());
-        }
-    };
 
     //实例包内
 
@@ -199,33 +158,6 @@ final class AnalyzerEnv
         }
     }
 
-    @NonNull
-    Method findProperty(@NonNull Class<?> clazz,
-                        @NonNull String name,
-                        @Nullable Class<?> sClass)
-    {
-        return findMethod(clazz, "set"
-                        + Character.toUpperCase(name.charAt(0))
-                        + name.substring(1), new Class<?>[]{sClass},
-                mPropertyFilter);
-    }
-
-    @NonNull
-    Method findFactory(@NonNull Class<?> clazz,
-                       @NonNull String name,
-                       @Nullable Class<?>[] sClasses)
-    {
-        return findMethod(clazz, name, sClasses, mFactoryFilter);
-    }
-
-    @NonNull
-    Field findField(@NonNull Class<?> clazz,
-                    @NonNull String name,
-                    @NonNull Class<?> sClass)
-    {
-        return findField(clazz, name, sClass, mFieldFilter);
-    }
-
     @Nullable
     Provider getProvider(@NonNull String name)
     {
@@ -269,13 +201,6 @@ final class AnalyzerEnv
     }
 
     @NonNull
-    Constructor<?> findConstructor(@NonNull Class<?> clazz,
-                                   @Nullable Class<?>[] classes)
-    {
-        return findConstructor(clazz, classes, null);
-    }
-
-    @NonNull
     String getAttrIfEmptyThrow(@NonNull Element element,
                                @NonNull String attr)
     {
@@ -306,130 +231,6 @@ final class AnalyzerEnv
                 String.format("Error in %s\n ",
                         mCurrent.asXML()), e);
     }
-
-    //实例私有
-
-    @NonNull
-    private Field findField(@NonNull Class<?> clazz,
-                            @NonNull String name,
-                            @NonNull Class<?> sClass,
-                            @Nullable Filter<Field> filter)
-    {
-        Field field;
-        try
-        {
-            field = clazz.getField(name);
-        } catch (NoSuchFieldException e)
-        {
-            throw formExceptionThrow(e);
-        }
-        if (TypeUtil.isAssignTo(sClass, field.getType())
-                && (filter == null || filter.filter(field)))
-        {
-            return field;
-        } else
-        {
-            throw fromMessageThrow(String.format(
-                    "Can't found field name by %s , can't cast %s to %s",
-                    name,
-                    sClass,
-                    field.getType()));
-        }
-    }
-
-    @NonNull
-    private Method findMethod(@NonNull Class<?> clazz,
-                              @NonNull String name,
-                              @Nullable Class<?>[] sClasses,
-                              @Nullable Filter<Method> filter)
-    {
-        if (sClasses == null)
-        {
-            try
-            {
-                return clazz.getMethod(name);
-            } catch (NoSuchMethodException e)
-            {
-                throw formExceptionThrow(e);
-            }
-        }
-        for (Method method : clazz.getMethods())
-        {
-            boolean match = true;
-            Class<?>[] pram = method.getParameterTypes();
-            if (method.getName().equals(name)
-                    && pram.length == sClasses.length
-                    && (filter == null || filter.filter(method)))
-            {
-                for (int i = 0; i < pram.length; i++)
-                {
-                    if (!TypeUtil.isAssignTo(sClasses[i], pram[i]))
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-            } else
-            {
-                match = false;
-            }
-            if (match)
-            {
-                return method;
-            }
-        }
-        throw fromMessageThrow(String.format(
-                "method whose name %s is not found in %s and requires %s",
-                name,
-                clazz,
-                Arrays.toString(sClasses)));
-    }
-
-    @NonNull
-    private Constructor<?> findConstructor(@NonNull Class<?> clazz,
-                                           @Nullable Class<?>[] sClasses,
-                                           @Nullable Filter<Constructor<?>> filter)
-    {
-        if (sClasses == null)
-        {
-            try
-            {
-                return clazz.getConstructor();
-            } catch (NoSuchMethodException e)
-            {
-                throw formExceptionThrow(e);
-            }
-        }
-        for (Constructor<?> constructor : clazz.getConstructors())
-        {
-            boolean match = true;
-            Class<?>[] pram = constructor.getParameterTypes();
-            if (pram.length == sClasses.length
-                    && (filter == null || filter.filter(constructor)))
-            {
-                for (int i = 0; i < pram.length; i++)
-                {
-                    if (!TypeUtil.isAssignTo(sClasses[i], pram[i]))
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-            } else
-            {
-                match = false;
-            }
-            if (match)
-            {
-                return constructor;
-            }
-        }
-        throw fromMessageThrow(String.format("Can't find constructor for %s in %s",
-                Arrays.toString(sClasses),
-                clazz));
-    }
-
-    //静态私有
 
     @NonNull
     private static List<TextConverter> newTextConverters()
