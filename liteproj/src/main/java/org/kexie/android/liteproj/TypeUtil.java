@@ -72,14 +72,6 @@ final class TypeUtil
         return getTypeMethod(clazz, name, sClasses, sFactoryFilter);
     }
 
-
-    @Nullable
-    static int[] getTypeUsingResources(@NonNull Class<?> ownerType)
-    {
-        Using using = ownerType.getAnnotation(Using.class);
-        return using == null ? null : using.value();
-    }
-
     @NonNull
     static Method getTypeProperty(@NonNull Class<?> clazz,
                                   @NonNull String name,

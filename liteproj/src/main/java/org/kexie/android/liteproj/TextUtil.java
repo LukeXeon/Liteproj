@@ -1,7 +1,5 @@
 package org.kexie.android.liteproj;
 
-import android.content.res.Resources;
-import android.support.annotation.AnyRes;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
@@ -105,7 +103,8 @@ final class TextUtil
         return result;
     }
 
-    static Object getConstantByText(String let)
+    @NonNull
+    static Object getConstantByText(@NonNull String let)
     {
         String value = let.substring(1, let.length());
         if (let.charAt(0) == '@')
@@ -130,37 +129,29 @@ final class TextUtil
         }
     }
 
-    static Document getDocument(Resources resources, @AnyRes int xml)
+    @NonNull
+    static Document getDocument(@NonNull InputStream stream,
+                                boolean compressed)
     {
-        String type = resources.getResourceTypeName(xml);
-        switch (type)
+        if (!compressed)
         {
-            case "raw":
+            try
             {
-                try (InputStream stream = resources.openRawResource(xml))
-                {
-                    return sSAXReader.read(stream);
-                } catch (IOException | DocumentException e)
-                {
-                    throw new RuntimeException(e);
-                }
+                return sSAXReader.read(stream);
+            } catch (DocumentException e)
+            {
+                throw new RuntimeException(e);
             }
-            case "xml":
+        } else
+        {
+            try
             {
-                try (InputStream stream = resources.openRawResource(xml))
-                {
-                    AXmlParserHandler listener = new AXmlParserHandler();
-                    new CompressedXmlParser().parse(stream, listener);
-                    return listener.getDocument();
-                } catch (IOException e)
-                {
-                    throw new RuntimeException(e);
-                }
-            }
-            default:
+                AXmlParserHandler listener = new AXmlParserHandler();
+                new CompressedXmlParser().parse(stream, listener);
+                return listener.getDocument();
+            } catch (IOException e)
             {
-                throw new IllegalStateException("Files can be in the 'raw' directory " +
-                        "or the 'xml' directory");
+                throw new RuntimeException(e);
             }
         }
     }

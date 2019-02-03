@@ -158,20 +158,26 @@ final class InjectionHandler
                         .registerFragmentLifecycleCallbacks(sFragmentCallbacks,
                                 true);
             }
-
             DependencyManager manager = null;
-            int[] resIds = TypeUtil.getTypeUsingResources(owner.getClass());
-            if (resIds != null && resIds.length != 0)
+            Using using = owner.getClass().getAnnotation(Using.class);
+            if (using != null)
             {
                 List<Dependency> dependencies = new LinkedList<>();
-                for (int resId : resIds)
+                if (using.value().length != 0)
                 {
-                    dependencies.add(sDependencyAnalyzer.analysis(resId));
+                    for (int resId : using.value())
+                    {
+                        dependencies.add(sDependencyAnalyzer.analysis(resId));
+                    }
+                }
+                if (using.assets().length != 0)
+                {
+                    for (String asset : using.assets())
+                    {
+                        dependencies.add(sDependencyAnalyzer.analysis(asset));
+                    }
                 }
                 manager = new DependencyManager(owner, dependencies);
-            } else
-            {
-                Log.w(TAG, String.format(" %s no set xml", owner.getClass()));
             }
             DependencyManager.sTable.put(owner, manager);
             if (manager != null)

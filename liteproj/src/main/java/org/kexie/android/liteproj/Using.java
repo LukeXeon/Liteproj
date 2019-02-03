@@ -18,4 +18,7 @@ public @interface Using
     @RawRes
     @NonNull
     int[] value();
+
+    @NonNull
+    String[] assets();
 }

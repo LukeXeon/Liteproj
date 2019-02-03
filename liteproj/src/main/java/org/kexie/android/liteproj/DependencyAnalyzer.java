@@ -13,9 +13,7 @@ import android.util.Log;
 
 import org.dom4j.Attribute;
 import org.dom4j.Document;
-import org.dom4j.DocumentException;
 import org.dom4j.Element;
-import org.dom4j.io.SAXReader;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +25,7 @@ final class DependencyAnalyzer extends ContextWrapper
 {
     private static final String TAG = "DependencyAnalyzer";
 
-    private final LruCache<Integer, Dependency> mResultCache;
+    private final LruCache<Object, Dependency> mResultCache;
 
     private static boolean listNoEmpty(@Nullable List<?> list)
     {
@@ -66,15 +64,52 @@ final class DependencyAnalyzer extends ContextWrapper
     @NonNull
     public Dependency analysis(@RawRes int xml)
     {
-        Log.i(TAG, String.format("analysis @raw/%s",
-                getResources().getResourceName(xml)));
         Dependency dependency = mResultCache.get(xml);
         if (dependency == null)
         {
-            dependency = analysisDocument(
-                    TextUtil.getDocument(getResources(), xml)
-            );
+            switch (getResources().getResourceTypeName(xml))
+            {
+                case "raw":
+                {
+                    dependency = analysisDocument(
+                            TextUtil.getDocument(getResources().openRawResource(xml),
+                                    false));
+                }
+                break;
+                case "xml":
+                {
+                    dependency = analysisDocument(
+                            TextUtil.getDocument(getResources().openRawResource(xml),
+                                    true));
+                }
+                break;
+                default:
+                {
+                    throw new IllegalStateException("Files can be in the 'raw' directory " +
+                            "or the 'xml' directory");
+                }
+            }
             mResultCache.put(xml, dependency);
+        }
+        return dependency;
+    }
+
+    @NonNull
+    public Dependency analysis(@NonNull String asset)
+    {
+        Dependency dependency = mResultCache.get(asset);
+        if (dependency == null)
+        {
+            try (InputStream stream = getAssets().open(asset))
+            {
+                dependency = analysisDocument(
+                        TextUtil.getDocument(stream, false)
+                );
+                mResultCache.put(asset, dependency);
+            } catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
         }
         return dependency;
     }
