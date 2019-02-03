@@ -10,6 +10,7 @@ import android.support.annotation.Nullable;
 import android.util.Log;
 
 /** @hide */
+
 public final class LiteprojInitializer
         extends ContentProvider
 {
@@ -22,7 +23,7 @@ public final class LiteprojInitializer
         Log.i(TAG, "liteproj init");
         Context context = getContext();
         assert context != null;
-        InjectionHandler.init(context);
+        LifecycleManager.init(context);
         return true;
     }
 

@@ -1,6 +1,10 @@
-package org.kexie.android.liteproj;
+package org.kexie.android.liteproj.analyzer;
 
 import android.support.annotation.NonNull;
+
+import org.kexie.android.liteproj.DependencyManager;
+import org.kexie.android.liteproj.DependencyType;
+import org.kexie.android.liteproj.util.TypeUtil;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -69,7 +73,7 @@ final class DependencyProvider implements Provider
     @NonNull
     @SuppressWarnings("unchecked")
     static Factory newFactory(@NonNull final Method method,
-                                       @NonNull final List<String> references)
+                              @NonNull final List<String> references)
     {
         return new Factory()
         {
@@ -104,7 +108,7 @@ final class DependencyProvider implements Provider
 
     @NonNull
     static Factory newFactory(@NonNull final Constructor<?> constructor,
-                                       @NonNull final List<String> references)
+                              @NonNull final List<String> references)
     {
         return new Factory()
         {

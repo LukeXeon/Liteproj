@@ -1,8 +1,11 @@
-package org.kexie.android.liteproj;
+package org.kexie.android.liteproj.analyzer;
 
 import android.support.annotation.NonNull;
 
-interface Provider
+import org.kexie.android.liteproj.DependencyManager;
+import org.kexie.android.liteproj.DependencyType;
+
+public interface Provider
 {
     @NonNull
     <T> T provide(@NonNull DependencyManager dependencyManager);

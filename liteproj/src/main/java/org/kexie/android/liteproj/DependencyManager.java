@@ -8,6 +8,9 @@ import android.support.v4.util.ArrayMap;
 import android.support.v4.util.ArraySet;
 import android.util.Log;
 
+import org.kexie.android.liteproj.analyzer.Dependency;
+import org.kexie.android.liteproj.analyzer.Provider;
+
 import java.lang.ref.WeakReference;
 import java.util.LinkedList;
 import java.util.List;
@@ -62,8 +65,7 @@ public final class DependencyManager
                     set.addAll(newSet);
                 } else
                 {
-                    throw new AnalysisException(
-                            String.format(
+                    throw new RuntimeException(String.format(
                                     "Dependency conflicts occur during Mergers set = %s",
                                     result.toString()));
                 }

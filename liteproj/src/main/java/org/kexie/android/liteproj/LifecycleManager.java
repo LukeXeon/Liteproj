@@ -11,6 +11,10 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.util.ArraySet;
 import android.util.Log;
 
+import org.kexie.android.liteproj.analyzer.Dependency;
+import org.kexie.android.liteproj.analyzer.DependencyAnalyzer;
+import org.kexie.android.liteproj.util.TypeUtil;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -18,9 +22,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-final class InjectionHandler
+final class LifecycleManager
 {
-    private InjectionHandler()
+    private LifecycleManager()
     {
         throw new AssertionError();
     }
@@ -63,7 +67,7 @@ final class InjectionHandler
         }
     };
 
-    private static final String TAG = "InjectionHandler";
+    private static final String TAG = "LifecycleManager";
 
     private static void inject(@NonNull Object object,
                                @NonNull DependencyManager dependency)

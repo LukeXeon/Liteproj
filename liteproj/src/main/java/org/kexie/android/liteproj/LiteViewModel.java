@@ -12,13 +12,13 @@ public class LiteViewModel
     public LiteViewModel(@NonNull Application application)
     {
         super(application);
-        InjectionHandler.onAttach(this);
+        LifecycleManager.onAttach(this);
     }
 
     @CallSuper
     @Override
     protected void onCleared()
     {
-        InjectionHandler.onDetach(this);
+        LifecycleManager.onDetach(this);
     }
 }

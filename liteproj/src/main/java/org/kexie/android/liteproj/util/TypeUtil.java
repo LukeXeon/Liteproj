@@ -1,4 +1,4 @@
-package org.kexie.android.liteproj;
+package org.kexie.android.liteproj.util;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -12,12 +12,8 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
 
-final class TypeUtil
+public final class TypeUtil
 {
-    interface Filter<T>
-    {
-        boolean filter(@NonNull T item);
-    }
 
     private interface TypeConverter
     {
@@ -65,17 +61,17 @@ final class TypeUtil
     }
 
     @NonNull
-    static Method getTypeFactory(@NonNull Class<?> clazz,
-                                 @NonNull String name,
-                                 @Nullable Class<?>[] sClasses)
+    public static Method getTypeFactory(@NonNull Class<?> clazz,
+                                        @NonNull String name,
+                                        @Nullable Class<?>[] sClasses)
     {
         return getTypeMethod(clazz, name, sClasses, sFactoryFilter);
     }
 
     @NonNull
-    static Method getTypeProperty(@NonNull Class<?> clazz,
-                                  @NonNull String name,
-                                  @Nullable Class<?> sClass)
+    public static Method getTypeProperty(@NonNull Class<?> clazz,
+                                         @NonNull String name,
+                                         @Nullable Class<?> sClass)
     {
         return getTypeMethod(clazz, "set"
                         + Character.toUpperCase(name.charAt(0))
@@ -84,26 +80,26 @@ final class TypeUtil
     }
 
     @NonNull
-    static Field getTypeField(@NonNull Class<?> clazz,
-                              @NonNull String name,
-                              @NonNull Class<?> sClass)
+    public static Field getTypeField(@NonNull Class<?> clazz,
+                                     @NonNull String name,
+                                     @NonNull Class<?> sClass)
     {
         return getTypeField(clazz, name, sClass, sFieldFilter);
     }
 
     @NonNull
-    static Constructor<?> getTypeConstructor(@NonNull Class<?> clazz,
-                                             @Nullable Class<?>[] classes)
+    public static Constructor<?> getTypeConstructor(@NonNull Class<?> clazz,
+                                                    @Nullable Class<?>[] classes)
     {
         return getTypeConstructor(clazz, classes, null);
     }
 
     @NonNull
     @SuppressWarnings("WeakerAccess")
-    static Field getTypeField(@NonNull Class<?> clazz,
-                              @NonNull String name,
-                              @NonNull Class<?> sClass,
-                              @Nullable Filter<Field> filter)
+    public static Field getTypeField(@NonNull Class<?> clazz,
+                                     @NonNull String name,
+                                     @NonNull Class<?> sClass,
+                                     @Nullable Filter<Field> filter)
     {
         Field field;
         try
@@ -129,10 +125,10 @@ final class TypeUtil
 
     @NonNull
     @SuppressWarnings("WeakerAccess")
-    static Method getTypeMethod(@NonNull Class<?> clazz,
-                                @NonNull String name,
-                                @Nullable Class<?>[] sClasses,
-                                @Nullable Filter<Method> filter)
+    public static Method getTypeMethod(@NonNull Class<?> clazz,
+                                       @NonNull String name,
+                                       @Nullable Class<?>[] sClasses,
+                                       @Nullable Filter<Method> filter)
     {
         if (sClasses == null)
         {
@@ -178,9 +174,9 @@ final class TypeUtil
 
     @NonNull
     @SuppressWarnings("WeakerAccess")
-    static Constructor<?> getTypeConstructor(@NonNull Class<?> clazz,
-                                             @Nullable Class<?>[] sClasses,
-                                             @Nullable Filter<Constructor<?>> filter)
+    public static Constructor<?> getTypeConstructor(@NonNull Class<?> clazz,
+                                                    @Nullable Class<?>[] sClasses,
+                                                    @Nullable Filter<Constructor<?>> filter)
     {
         if (sClasses == null)
         {
@@ -223,9 +219,9 @@ final class TypeUtil
     }
 
     @NonNull
-    @SuppressWarnings("unchecked")
-    static <T> T castToType(@NonNull Object obj,
-                            @NonNull Class<T> targetClass)
+    @SuppressWarnings({"unchecked", "WeakerAccess"})
+    public static <T> T castToType(@NonNull Object obj,
+                                   @NonNull Class<T> targetClass)
     {
         //处理引用类型和可赋值类型
         Class<?> objClass = obj.getClass();
@@ -243,8 +239,8 @@ final class TypeUtil
                 targetClass.getName()));
     }
 
-    static boolean isAssignToType(@NonNull Class<?> objClass,
-                                  @NonNull Class<?> targetClass)
+    public static boolean isAssignToType(@NonNull Class<?> objClass,
+                                         @NonNull Class<?> targetClass)
     {
         if (targetClass.isAssignableFrom(objClass))
         {
@@ -253,7 +249,8 @@ final class TypeUtil
         return sTypeConverters.get(Pair.create(objClass, targetClass)) != null;
     }
 
-    private static boolean isFloatType(@NonNull Class<?> type)
+    @SuppressWarnings("WeakerAccess")
+    public static boolean isFloatType(@NonNull Class<?> type)
     {
         return Float.class.equals(type) || Double.class.equals(type);
     }

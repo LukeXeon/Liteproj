@@ -1,22 +1,30 @@
-package org.kexie.android.liteproj;
+package org.kexie.android.liteproj.util;
 
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
+import org.dom4j.Branch;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
+import org.dom4j.DocumentFactory;
+import org.dom4j.Element;
+import org.dom4j.Namespace;
+import org.dom4j.QName;
 import org.dom4j.io.SAXReader;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import fr.xgouchet.axml.Attribute;
 import fr.xgouchet.axml.CompressedXmlParser;
+import fr.xgouchet.axml.CompressedXmlParserListener;
 
-final class TextUtil
+public final class TextUtil
 {
     private interface TextConverter
     {
@@ -24,11 +32,99 @@ final class TextUtil
         Object valueOf(@NonNull String value);
     }
 
-    enum TextType
+    private static final class AXmlParserHandler
+            implements CompressedXmlParserListener
     {
-        ILLEGAL,
-        CONSTANT,
-        REFERENCE,
+        private final List<Branch> mStack = new ArrayList<>();
+        private Document mDocument;
+
+        @Override
+        public void startDocument()
+        {
+            mDocument = DocumentFactory.getInstance().createDocument();
+            mStack.add(mDocument);
+        }
+
+        @Override
+        public void endDocument()
+        {
+
+        }
+
+        @Override
+        public void startPrefixMapping(String prefix,
+                                       String uri)
+        {
+
+        }
+
+        @Override
+        public void endPrefixMapping(String prefix,
+                                     String uri)
+        {
+
+        }
+
+        @Override
+        public void startElement(String uri,
+                                 String localName,
+                                 String qName,
+                                 Attribute[] attributes)
+        {
+            Element element = TextUtils.isEmpty(uri)
+                    ? mStack.get(mStack.size() - 1).addElement(localName)
+                    : mStack.get(mStack.size() - 1).addElement(qName, uri);
+            for (Attribute attribute : attributes)
+            {
+                if (TextUtils.isEmpty(attribute.getNamespace()))
+                {
+                    element.addAttribute(attribute.getName(),
+                            attribute.getValue());
+                } else
+                {
+                    element.addAttribute(new QName(attribute.getName(),
+                                    new Namespace(attribute.getPrefix(),
+                                            attribute.getNamespace())),
+                            attribute.getValue());
+                }
+            }
+            mStack.add(element);
+        }
+
+        @Override
+        public void endElement(String uri,
+                               String localName,
+                               String qName)
+        {
+            mStack.remove(mStack.size() - 1);
+        }
+
+        @Override
+        public void characterData(String data)
+        {
+            Branch branch = mStack.get(mStack.size() - 1);
+            if (branch instanceof Element)
+            {
+                ((Element) branch).addCDATA(data);
+            }
+        }
+
+        @Override
+        public void processingInstruction(String target,
+                                          String data)
+        {
+
+        }
+
+        @Override
+        public void text(String data)
+        {
+            Branch branch = mStack.get(mStack.size() - 1);
+            if (branch instanceof Element)
+            {
+                ((Element) branch).addText(data);
+            }
+        }
     }
 
     private static final SAXReader sSAXReader = new SAXReader();
@@ -104,7 +200,7 @@ final class TextUtil
     }
 
     @NonNull
-    static Object getConstantByText(@NonNull String let)
+    public static Object getConstantByText(@NonNull String let)
     {
         String value = let.substring(1, let.length());
         if (let.charAt(0) == '@')
@@ -130,10 +226,10 @@ final class TextUtil
     }
 
     @NonNull
-    static Document getDocument(@NonNull InputStream stream,
-                                boolean compressed)
+    public static Document getDocument(@NonNull InputStream stream,
+                                       boolean isCompressed)
     {
-        if (!compressed)
+        if (!isCompressed)
         {
             try
             {
@@ -146,9 +242,9 @@ final class TextUtil
         {
             try
             {
-                AXmlParserHandler listener = new AXmlParserHandler();
-                new CompressedXmlParser().parse(stream, listener);
-                return listener.getDocument();
+                AXmlParserHandler handler = new AXmlParserHandler();
+                new CompressedXmlParser().parse(stream, handler);
+                return handler.mDocument;
             } catch (IOException e)
             {
                 throw new RuntimeException(e);
@@ -157,7 +253,7 @@ final class TextUtil
     }
 
     @NonNull
-    static TextType getTextType(@NonNull String text)
+    public static TextType getTextType(@NonNull String text)
     {
         if (TextUtils.isEmpty(text))
         {

@@ -1,4 +1,4 @@
-package org.kexie.android.liteproj;
+package org.kexie.android.liteproj.analyzer;
 
 import android.content.Context;
 import android.content.ContextWrapper;
@@ -14,6 +14,11 @@ import android.util.Log;
 import org.dom4j.Attribute;
 import org.dom4j.Document;
 import org.dom4j.Element;
+import org.kexie.android.liteproj.DependencyType;
+import org.kexie.android.liteproj.R;
+import org.kexie.android.liteproj.util.TextType;
+import org.kexie.android.liteproj.util.TextUtil;
+import org.kexie.android.liteproj.util.TypeUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,7 +26,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-final class DependencyAnalyzer extends ContextWrapper
+public final class DependencyAnalyzer
+        extends ContextWrapper
 {
     private static final String TAG = "DependencyAnalyzer";
 
@@ -326,7 +332,7 @@ final class DependencyAnalyzer extends ContextWrapper
                 getString(R.string.let_string));
         if (ref != null)
         {
-            if (TextUtil.TextType.REFERENCE.equals(
+            if (TextType.REFERENCE.equals(
                     TextUtil.getTextType(ref)))
             {
                 return ref;
@@ -356,7 +362,7 @@ final class DependencyAnalyzer extends ContextWrapper
         env.mark(element);
         String let = env.getAttrIfEmptyThrow(element,
                 getString(R.string.let_string));
-        if (TextUtil.TextType.CONSTANT.equals(TextUtil.getTextType(let)))
+        if (TextType.CONSTANT.equals(TextUtil.getTextType(let)))
         {
             Provider provider = env.getProvider(let);
             if (provider == null)
