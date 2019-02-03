@@ -149,6 +149,7 @@ final class LifecycleEventHandler
 
     static void onAttach(@NonNull Object owner)
     {
+
         if (!DependencyManager.sTable.containsKey(owner))
         {
             if (owner instanceof FragmentActivity)
@@ -168,6 +169,9 @@ final class LifecycleEventHandler
                     dependencies.add(sDependencyAnalyzer.analysis(resId));
                 }
                 manager = new DependencyManager(owner, dependencies);
+            } else
+            {
+                Log.w(TAG, String.format("Type %s no set xml", owner.getClass()));
             }
             DependencyManager.sTable.put(owner, manager);
             if (manager != null)

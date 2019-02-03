@@ -68,6 +68,8 @@ final class DependencyAnalyzer extends ContextWrapper
     @NonNull
     public Dependency analysis(@RawRes int rawXml)
     {
+        Log.i(TAG, String.format("analysis @raw/%s",
+                getResources().getResourceName(rawXml)));
         Dependency dependency = mResultCache.get(rawXml);
         if (dependency == null)
         {

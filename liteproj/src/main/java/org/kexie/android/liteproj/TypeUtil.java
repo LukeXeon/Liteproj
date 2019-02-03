@@ -76,7 +76,7 @@ final class TypeUtil
     @Nullable
     static int[] getTypeUsingResources(@NonNull Class<?> ownerType)
     {
-        Using using = ownerType.getClass().getAnnotation(Using.class);
+        Using using = ownerType.getAnnotation(Using.class);
         return using == null ? null : using.value();
     }
 
