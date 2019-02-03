@@ -25,8 +25,6 @@ import java.util.List;
 
 final class DependencyAnalyzer extends ContextWrapper
 {
-    private final SAXReader mReader = new SAXReader();
-
     private static final String TAG = "DependencyAnalyzer";
 
     private final LruCache<Integer, Dependency> mResultCache;
@@ -66,23 +64,24 @@ final class DependencyAnalyzer extends ContextWrapper
     }
 
     @NonNull
-    public Dependency analysis(@RawRes int rawXml)
+    public Dependency analysis(@RawRes int xml)
     {
         Log.i(TAG, String.format("analysis @raw/%s",
-                getResources().getResourceName(rawXml)));
-        Dependency dependency = mResultCache.get(rawXml);
+                getResources().getResourceName(xml)));
+        Dependency dependency = mResultCache.get(xml);
         if (dependency == null)
         {
-            dependency = analysisInternal(rawXml);
-            mResultCache.put(rawXml, dependency);
+            dependency = analysisDocument(
+                    TextUtil.getDocument(getResources(), xml)
+            );
+            mResultCache.put(xml, dependency);
         }
         return dependency;
     }
 
     @NonNull
-    private Dependency analysisInternal(int rawXml)
+    private Dependency analysisDocument(Document document)
     {
-        Document document = getDocument(rawXml);
         Element scope = document.getRootElement();
         AnalyzerEnv env = new AnalyzerEnv(getOwnerType(scope), scope);
         List<Element> elements = scope.elements();
@@ -292,8 +291,8 @@ final class DependencyAnalyzer extends ContextWrapper
                 getString(R.string.let_string));
         if (ref != null)
         {
-            if (AnalyzerEnv.TextType.REFERENCE.equals(
-                    env.getTextType(ref)))
+            if (TextUtil.TextType.REFERENCE.equals(
+                    TextUtil.getTextType(ref)))
             {
                 return ref;
             }
@@ -302,7 +301,11 @@ final class DependencyAnalyzer extends ContextWrapper
             Provider provider = env.getProvider(let);
             if (provider == null)
             {
-                provider = env.newConstantProvider(let);
+                provider = new DependencyProvider(
+                        DependencyType.SINGLETON,
+                        DependencyProvider.newSingleton(
+                                TextUtil.getConstantByText(let)),
+                        Collections.<Provider.Setter>emptyList());
                 env.addProvider(let, provider);
             }
             return let;
@@ -318,12 +321,16 @@ final class DependencyAnalyzer extends ContextWrapper
         env.mark(element);
         String let = env.getAttrIfEmptyThrow(element,
                 getString(R.string.let_string));
-        if (AnalyzerEnv.TextType.CONSTANT.equals(env.getTextType(let)))
+        if (TextUtil.TextType.CONSTANT.equals(TextUtil.getTextType(let)))
         {
             Provider provider = env.getProvider(let);
             if (provider == null)
             {
-                provider = env.newConstantProvider(let);
+                provider = new DependencyProvider(
+                        DependencyType.SINGLETON,
+                        DependencyProvider.newSingleton(
+                                TextUtil.getConstantByText(let)),
+                        Collections.<Provider.Setter>emptyList());
                 env.addProvider(let, provider);
             }
             return provider;
@@ -364,17 +371,6 @@ final class DependencyAnalyzer extends ContextWrapper
         } catch (ClassNotFoundException e)
         {
             throw env.formExceptionThrow(e);
-        }
-    }
-
-    private Document getDocument(@RawRes int rawXml)
-    {
-        try (InputStream stream = getResources().openRawResource(rawXml))
-        {
-            return mReader.read(stream);
-        } catch (IOException | DocumentException e)
-        {
-            throw new RuntimeException(e);
         }
     }
 }

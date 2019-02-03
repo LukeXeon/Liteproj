@@ -47,7 +47,7 @@ final class InjectionHandler
     };
 
     private final static Application.ActivityLifecycleCallbacks
-            sActivityCallbacks = new EmptyLifecycleCallbacks()
+            sActivityCallbacks = new LifecycleHandler()
     {
         @Override
         public void onActivityCreated(Activity activity,
@@ -171,7 +171,7 @@ final class InjectionHandler
                 manager = new DependencyManager(owner, dependencies);
             } else
             {
-                Log.w(TAG, String.format("Type %s no set xml", owner.getClass()));
+                Log.w(TAG, String.format("TextType %s no set xml", owner.getClass()));
             }
             DependencyManager.sTable.put(owner, manager);
             if (manager != null)

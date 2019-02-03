@@ -9,40 +9,17 @@ import org.dom4j.Attribute;
 import org.dom4j.Element;
 import org.dom4j.Node;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 final class AnalyzerEnv
 {
     private static final String TAG = "AnalyzerEnv";
-
-    private interface TextConverter
-    {
-        @NonNull
-        Object valueOf(@NonNull String value);
-    }
-
-    enum TextType
-    {
-        ILLEGAL,
-        CONSTANT,
-        REFERENCE,
-    }
 
     private Node mCurrent;
 
     private final Provider mProxyProvider;
 
     private final Map<String, Provider> mProviders = new ArrayMap<>();
-
-    private final List<TextConverter> mTextConverters;
-
-    private final Pattern mNamePattern = Pattern
-            .compile("[\u4e00-\u9fa5_A-Za-z][\u4e00-\u9fa5_A-Za-z0-9]*");
 
     //实例包内
 
@@ -51,34 +28,9 @@ final class AnalyzerEnv
         return new Dependency(mProxyProvider.getResultType(), mProviders);
     }
 
-    AnalyzerEnv(@NonNull final Class<?> ownerType, @NonNull Node node)
+    AnalyzerEnv(@NonNull Class<?> ownerType, @NonNull Node node)
     {
-        this.mProxyProvider = new Provider()
-        {
-            @NonNull
-            @Override
-            public <T> T provide(@NonNull DependencyManager dependencyManager)
-            {
-                throw new IllegalStateException(
-                        "Objects cannot be generated " +
-                                "from proxy providers");
-            }
-
-            @NonNull
-            @Override
-            public DependencyType getType()
-            {
-                return DependencyType.SINGLETON;
-            }
-
-            @NonNull
-            @Override
-            public Class<?> getResultType()
-            {
-                return ownerType;
-            }
-        };
-        this.mTextConverters = newTextConverters();
+        this.mProxyProvider = getProxyProvider(ownerType);
         mark(node);
     }
 
@@ -97,64 +49,6 @@ final class AnalyzerEnv
         } else
         {
             throw fromMessageThrow(String.format("no found name by %s provider", name));
-        }
-    }
-
-    @NonNull
-    TextType getTextType(@NonNull String text)
-    {
-        if (TextUtils.isEmpty(text))
-        {
-            return TextType.ILLEGAL;
-        } else
-        {
-            if ((text.charAt(0) == '@')
-                    && !TextUtils.isEmpty(text.substring(1, text.length())))
-            {
-                return TextType.CONSTANT;
-            } else if (mNamePattern
-                    .matcher(text)
-                    .matches())
-            {
-                return TextType.REFERENCE;
-            } else
-            {
-                return TextType.ILLEGAL;
-            }
-        }
-    }
-
-    @NonNull
-    Provider newConstantProvider(@NonNull String let)
-    {
-        String value = let.substring(1, let.length());
-        if (let.charAt(0) == '@')
-        {
-            return new DependencyProvider(
-                    DependencyType.SINGLETON,
-                    DependencyProvider.newSingleton(value),
-                    Collections.<Provider.Setter>emptyList()
-            );
-        } else
-        {
-            for (TextConverter valueOf : mTextConverters)
-            {
-                try
-                {
-                    return new DependencyProvider(
-                            DependencyType.SINGLETON,
-                            DependencyProvider.newSingleton(valueOf.valueOf(value)),
-                            Collections.<Provider.Setter>emptyList()
-                    );
-                } catch (NumberFormatException ignored)
-                {
-
-                }
-            }
-            throw new IllegalStateException(
-                    String.format(
-                            "The name %s does not match the rule of let"
-                            , let));
         }
     }
 
@@ -232,63 +126,32 @@ final class AnalyzerEnv
                         mCurrent.asXML()), e);
     }
 
-    @NonNull
-    private static List<TextConverter> newTextConverters()
+    private static Provider getProxyProvider(final Class<?> ownerType)
     {
-        List<TextConverter> result = new LinkedList<>();
-        result.add(new TextConverter()
+        return new Provider()
         {
             @NonNull
             @Override
-            public Object valueOf(@NonNull String value)
+            public <T> T provide(@NonNull DependencyManager dependencyManager)
             {
-                if (!Character.isDigit(value.charAt(0)))
-                {
-                    if (value.length() == 1)
-                    {
-                        return value.charAt(0);
-                    } else if ("true".equals(value) || "false".equals(value))
-                    {
-                        return Boolean.valueOf(value);
-                    }
-                }
-                throw new NumberFormatException();
+                throw new IllegalStateException(
+                        "Objects cannot be generated " +
+                                "from proxy providers");
             }
-        });
-        for (final Class<?> type : new Class<?>[]{Byte.class,
-                Short.class,
-                Integer.class,
-                Long.class,
-                Float.class,
-                Double.class})
-        {
-            result.add(new TextConverter()
+
+            @NonNull
+            @Override
+            public DependencyType getType()
             {
-                @NonNull
-                @Override
-                public Object valueOf(@NonNull String value)
-                {
-                    try
-                    {
-                        return type.getMethod("valueOf", String.class)
-                                .invoke(null, value);
-                    } catch (IllegalAccessException
-                            | NoSuchMethodException e)
-                    {
-                        throw new AssertionError(e);
-                    } catch (InvocationTargetException e)
-                    {
-                        if (e.getCause() instanceof NumberFormatException)
-                        {
-                            throw (NumberFormatException) e.getCause();
-                        } else
-                        {
-                            throw new AssertionError(e);
-                        }
-                    }
-                }
-            });
-        }
-        return result;
+                return DependencyType.SINGLETON;
+            }
+
+            @NonNull
+            @Override
+            public Class<?> getResultType()
+            {
+                return ownerType;
+            }
+        };
     }
 }

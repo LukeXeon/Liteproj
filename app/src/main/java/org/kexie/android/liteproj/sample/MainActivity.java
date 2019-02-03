@@ -1,6 +1,5 @@
 package org.kexie.android.liteproj.sample;
 
-import android.app.Activity;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -15,7 +14,7 @@ import org.kexie.android.liteproj.Reference;
 import org.kexie.android.liteproj.Using;
 
 
-@Using({R.raw.test_avtivity, R.raw.test_app})
+@Using({R.raw.test_avtivity, R.xml.test_app})
 public class MainActivity extends AppCompatActivity
 {
     private static final String TAG = "MainActivity";
@@ -49,4 +48,5 @@ public class MainActivity extends AppCompatActivity
             }
         }, BIND_AUTO_CREATE);
     }
+
 }
