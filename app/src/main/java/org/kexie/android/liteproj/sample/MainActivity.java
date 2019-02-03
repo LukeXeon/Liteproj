@@ -1,5 +1,6 @@
 package org.kexie.android.liteproj.sample;
 
+import android.app.Activity;
 import android.arch.lifecycle.ViewModelProviders;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -29,6 +30,8 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
+        Logger.d(Activity.class.getClassLoader());
+        Logger.d(AppCompatActivity.class.getClassLoader());
         setContentView(R.layout.activity_main);
         Logger.d("test " + test);
         ViewModelTest test = ViewModelProviders.of(this).get(ViewModelTest.class);

@@ -70,13 +70,13 @@ final class LifecycleEventHandler
     {
         Log.d(TAG, String.format("inject to %s", object));
         Class<?> type = object.getClass();
-        Set<Class<?>> baseTypes = new ArraySet<>();
-        baseTypes.add(FragmentActivity.class);
-        baseTypes.add(Fragment.class);
-        baseTypes.add(Application.class);
-        baseTypes.add(LiteService.class);
-        baseTypes.add(LiteViewModel.class);
-        while (type != null && !baseTypes.contains(type))
+        Set<Class<?>> frameworkTypes = new ArraySet<>();
+        frameworkTypes.add(Application.class);
+        frameworkTypes.add(FragmentActivity.class);
+        frameworkTypes.add(Fragment.class);
+        frameworkTypes.add(LiteService.class);
+        frameworkTypes.add(LiteViewModel.class);
+        while (type != null && !frameworkTypes.contains(type))
         {
             for (Field field : type.getDeclaredFields())
             {

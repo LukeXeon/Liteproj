@@ -9,7 +9,6 @@ public class LiteViewModel
         extends AndroidViewModel
 {
 
-
     public LiteViewModel(@NonNull Application application)
     {
         super(application);
