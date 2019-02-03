@@ -200,7 +200,7 @@ public final class TextUtil
     }
 
     @NonNull
-    public static Object getConstantByText(@NonNull String let)
+    public static Object getConstant(@NonNull String let)
     {
         String value = let.substring(1, let.length());
         if (let.charAt(0) == '@')

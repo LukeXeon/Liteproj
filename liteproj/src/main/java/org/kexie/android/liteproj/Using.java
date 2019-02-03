@@ -20,5 +20,5 @@ public @interface Using
     int[] value();
 
     @NonNull
-    String[] assets();
+    String[] assets() default {};
 }

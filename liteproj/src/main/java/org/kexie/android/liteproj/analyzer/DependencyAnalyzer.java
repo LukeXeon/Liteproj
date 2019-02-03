@@ -345,7 +345,7 @@ public final class DependencyAnalyzer
                 provider = new DependencyProvider(
                         DependencyType.SINGLETON,
                         DependencyProvider.newSingleton(
-                                TextUtil.getConstantByText(let)),
+                                TextUtil.getConstant(let)),
                         Collections.<Provider.Setter>emptyList());
                 env.addProvider(let, provider);
             }
@@ -370,7 +370,7 @@ public final class DependencyAnalyzer
                 provider = new DependencyProvider(
                         DependencyType.SINGLETON,
                         DependencyProvider.newSingleton(
-                                TextUtil.getConstantByText(let)),
+                                TextUtil.getConstant(let)),
                         Collections.<Provider.Setter>emptyList());
                 env.addProvider(let, provider);
             }
