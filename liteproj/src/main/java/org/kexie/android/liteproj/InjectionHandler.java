@@ -171,7 +171,7 @@ final class InjectionHandler
                 manager = new DependencyManager(owner, dependencies);
             } else
             {
-                Log.w(TAG, String.format("TextType %s no set xml", owner.getClass()));
+                Log.w(TAG, String.format(" %s no set xml", owner.getClass()));
             }
             DependencyManager.sTable.put(owner, manager);
             if (manager != null)

@@ -24,7 +24,7 @@ final class AXmlParserHandler
     {
         mStack = new ArrayList<>();
     }
-    
+
     Document getDocument()
     {
         return mDocument;
