@@ -62,7 +62,7 @@ public final class DependencyManager
                     set.addAll(newSet);
                 } else
                 {
-                    throw new GenerateDepartmentException(
+                    throw new AnalysisException(
                             String.format(
                                     "Dependency conflicts occur during Mergers set = %s",
                                     result.toString()));

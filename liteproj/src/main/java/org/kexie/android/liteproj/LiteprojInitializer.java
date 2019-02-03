@@ -1,6 +1,5 @@
 package org.kexie.android.liteproj;
 
-import android.app.Application;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
@@ -10,6 +9,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
+/** @hide */
 public final class LiteprojInitializer
         extends ContentProvider
 {
@@ -22,9 +22,7 @@ public final class LiteprojInitializer
         Log.i(TAG, "liteproj init");
         Context context = getContext();
         assert context != null;
-        LifecycleEventHandler.init(
-                (Application) context.getApplicationContext()
-        );
+        InjectionHandler.init(context);
         return true;
     }
 

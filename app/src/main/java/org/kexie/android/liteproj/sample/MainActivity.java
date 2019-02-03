@@ -30,8 +30,6 @@ public class MainActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        Logger.d(Activity.class.getClassLoader());
-        Logger.d(AppCompatActivity.class.getClassLoader());
         setContentView(R.layout.activity_main);
         Logger.d("test " + test);
         ViewModelTest test = ViewModelProviders.of(this).get(ViewModelTest.class);

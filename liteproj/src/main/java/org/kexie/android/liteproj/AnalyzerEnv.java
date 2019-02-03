@@ -216,7 +216,7 @@ final class AnalyzerEnv
     @NonNull
     RuntimeException fromMessageThrow(@NonNull String massage)
     {
-        return new GenerateDepartmentException(String.format(
+        return new AnalysisException(String.format(
                 "Error in %s ", mCurrent.asXML())
                 + (TextUtils.isEmpty(massage)
                 ? ""
@@ -227,7 +227,7 @@ final class AnalyzerEnv
     RuntimeException
     formExceptionThrow(@NonNull Throwable e)
     {
-        return new GenerateDepartmentException(
+        return new AnalysisException(
                 String.format("Error in %s\n ",
                         mCurrent.asXML()), e);
     }

@@ -279,7 +279,7 @@ final class TypeUtil
                 return obj;
             }
         };
-        ArrayMap<Pair<Class<?>, Class<?>>, TypeConverter> result = new ArrayMap<>();
+        Map<Pair<Class<?>, Class<?>>, TypeConverter> result = new ArrayMap<>();
         result.put(Pair.<Class<?>, Class<?>>
                 create(Boolean.class, Boolean.TYPE), castToThis);
         result.put(Pair.<Class<?>, Class<?>>

@@ -18,9 +18,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-final class LifecycleEventHandler
+final class InjectionHandler
 {
-    private LifecycleEventHandler()
+    private InjectionHandler()
     {
         throw new AssertionError();
     }
@@ -42,7 +42,7 @@ final class LifecycleEventHandler
         public void onFragmentDestroyed(@NonNull FragmentManager fm,
                                         @NonNull Fragment f)
         {
-            onDestroy(f);
+            onDetach(f);
         }
     };
 
@@ -59,11 +59,11 @@ final class LifecycleEventHandler
         @Override
         public void onActivityDestroyed(Activity activity)
         {
-            onDestroy(activity);
+            onDetach(activity);
         }
     };
 
-    private static final String TAG = "LifecycleEventHandler";
+    private static final String TAG = "InjectionHandler";
 
     private static void inject(@NonNull Object object,
                                @NonNull DependencyManager dependency)
@@ -137,10 +137,11 @@ final class LifecycleEventHandler
         }
     }
 
-    static synchronized void init(@NonNull Application application)
+    static synchronized void init(@NonNull Context context)
     {
         if (sDependencyAnalyzer == null)
         {
+            Application application = (Application) context.getApplicationContext();
             sDependencyAnalyzer = new DependencyAnalyzer(application);
             application.registerActivityLifecycleCallbacks(sActivityCallbacks);
             onAttach(application);
@@ -149,7 +150,6 @@ final class LifecycleEventHandler
 
     static void onAttach(@NonNull Object owner)
     {
-
         if (!DependencyManager.sTable.containsKey(owner))
         {
             if (owner instanceof FragmentActivity)
@@ -181,7 +181,7 @@ final class LifecycleEventHandler
         }
     }
 
-    static void onDestroy(@NonNull Object owner)
+    static void onDetach(@NonNull Object owner)
     {
         DependencyManager manager = DependencyManager.sTable.remove(owner);
         if (manager != null)

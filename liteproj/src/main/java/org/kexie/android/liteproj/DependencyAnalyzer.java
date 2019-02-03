@@ -345,12 +345,12 @@ final class DependencyAnalyzer extends ContextWrapper
                     return Class.forName(attribute.getValue());
                 } catch (ClassNotFoundException e)
                 {
-                    throw new GenerateDepartmentException(e);
+                    throw new AnalysisException(e);
                 }
             }
 
         }
-        throw new GenerateDepartmentException("XML file format error in " + root.asXML());
+        throw new AnalysisException("XML file format error in " + root.asXML());
     }
 
     private Class<?> getClassAttr(AnalyzerEnv env, Element element)
