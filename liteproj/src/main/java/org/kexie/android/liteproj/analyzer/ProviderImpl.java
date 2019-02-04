@@ -60,6 +60,7 @@ final class ProviderImpl
         };
     }
 
+    @NonNull
     static Provider createProvider(@NonNull DependencyType type,
                                    @NonNull Factory factory,
                                    @NonNull List<Setter> setters)
@@ -147,6 +148,7 @@ final class ProviderImpl
         };
     }
 
+    @NonNull
     static Factory createBuilderFactory(@NonNull final Class<?> builderType,
                                         @NonNull final Map<Method, String> references,
                                         @NonNull final Method build)
@@ -240,8 +242,9 @@ final class ProviderImpl
         return args;
     }
 
+    @NonNull
     @SuppressWarnings("unchecked")
-    static Factory createSingletonFactory(Object object)
+    static Factory createSingletonFactory(@NonNull Object object)
     {
         final Object nonNull = Objects.requireNonNull(object);
         return new Factory()

@@ -9,7 +9,8 @@ public class GenerateDependencyException extends RuntimeException
         super(message);
     }
 
-    public GenerateDependencyException(@NonNull String message, @NonNull Throwable e)
+    public GenerateDependencyException(@NonNull String message,
+                                       @NonNull Throwable e)
     {
         super(message, e);
     }

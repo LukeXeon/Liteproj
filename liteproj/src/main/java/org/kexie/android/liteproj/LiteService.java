@@ -1,12 +1,9 @@
 package org.kexie.android.liteproj;
 
 import android.app.Service;
-import android.content.Intent;
-import android.os.IBinder;
 import android.support.annotation.CallSuper;
-import android.support.annotation.Nullable;
 
-public class LiteService extends Service
+public abstract class LiteService extends Service
 {
     @CallSuper
     @Override
@@ -24,10 +21,4 @@ public class LiteService extends Service
         LifecycleManager.onDetach(this);
     }
 
-    @Nullable
-    @Override
-    public IBinder onBind(Intent intent)
-    {
-        return null;
-    }
 }

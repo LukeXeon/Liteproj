@@ -1,5 +1,6 @@
 package org.kexie.android.liteproj.analyzer;
 
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import org.dom4j.Branch;
@@ -25,7 +26,8 @@ final class AXmlReader
     private final List<Branch> mStack = new ArrayList<>();
     private Document mDocument;
 
-    Document read(InputStream stream) throws IOException
+    @NonNull
+    Document read(@NonNull InputStream stream) throws IOException
     {
         parse(stream, this);
         return mDocument;

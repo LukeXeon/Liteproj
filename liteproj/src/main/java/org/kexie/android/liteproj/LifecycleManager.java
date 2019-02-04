@@ -58,14 +58,14 @@ final class LifecycleManager
             sActivityCallbacks = new LifecycleHandler()
     {
         @Override
-        public void onActivityCreated(Activity activity,
-                                      Bundle savedInstanceState)
+        public void onActivityCreated(@NonNull Activity activity,
+                                      @NonNull Bundle savedInstanceState)
         {
             onAttach(activity);
         }
 
         @Override
-        public void onActivityDestroyed(Activity activity)
+        public void onActivityDestroyed(@NonNull Activity activity)
         {
             onDetach(activity);
         }

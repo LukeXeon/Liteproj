@@ -1,6 +1,5 @@
 package org.kexie.android.liteproj;
 
-import android.support.annotation.NonNull;
 import android.support.annotation.RawRes;
 import android.support.annotation.XmlRes;
 
@@ -16,9 +15,7 @@ public @interface Using
 {
     @XmlRes
     @RawRes
-    @NonNull
     int[] value();
 
-    @NonNull
     String[] assets() default {};
 }

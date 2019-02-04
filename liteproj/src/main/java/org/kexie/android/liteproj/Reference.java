@@ -1,7 +1,5 @@
 package org.kexie.android.liteproj;
 
-import android.support.annotation.NonNull;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
@@ -13,6 +11,5 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Target({FIELD, METHOD})
 public @interface Reference
 {
-    @NonNull
     String value();
 }

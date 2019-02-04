@@ -46,7 +46,8 @@ public final class DependencyAnalyzer
 
     private static final String TAG = "DependencyAnalyzer";
 
-    private static final List<TextConverter> sTextConverters = newTextConverters();
+    private static final List<TextConverter>
+            sTextConverters = newTextConverters();
 
     private final LruCache<Object, Dependency> mResultCache;
 
@@ -188,7 +189,7 @@ public final class DependencyAnalyzer
         }
     }
 
-    public DependencyAnalyzer(Context base)
+    public DependencyAnalyzer(@NonNull Context base)
     {
         super(base.getApplicationContext());
         mResultCache = new LruCache<>(getCacheSize());
@@ -248,7 +249,7 @@ public final class DependencyAnalyzer
     }
 
     @NonNull
-    private Dependency analysisDocument(Document document)
+    private Dependency analysisDocument(@NonNull Document document)
     {
         Element scope = document.getRootElement();
         AnalyzerEnv env = new AnalyzerEnv(getOwnerType(scope), scope);
@@ -269,7 +270,9 @@ public final class DependencyAnalyzer
         return env.makeResult();
     }
 
-    private Provider analysisVar(AnalyzerEnv env, Element element)
+    @NonNull
+    private Provider analysisVar(@NonNull AnalyzerEnv env,
+                                 @NonNull Element element)
     {
         env.mark(element);
         String val = env.getAttrNoThrow(element, getString(R.string.val_string));
@@ -282,7 +285,9 @@ public final class DependencyAnalyzer
         }
     }
 
-    private Provider analysisProviderVar(AnalyzerEnv env, Element element)
+    @NonNull
+    private Provider analysisProviderVar(@NonNull AnalyzerEnv env,
+                                         @NonNull Element element)
     {
         env.mark(element);
         Class<?> type = getTypeAttrIfErrorThrow(env, element);
@@ -323,7 +328,8 @@ public final class DependencyAnalyzer
                 setters);
     }
 
-    private boolean isSingleton(AnalyzerEnv env, Element element)
+    private boolean isSingleton(@NonNull AnalyzerEnv env,
+                                @NonNull Element element)
     {
         env.mark(element);
         String provider = env.getAttrNoThrow(element,
@@ -346,7 +352,10 @@ public final class DependencyAnalyzer
         }
     }
 
-    private Provider.Setter analysisField(AnalyzerEnv env, Element element, Class<?> path)
+    @NonNull
+    private Provider.Setter analysisField(@NonNull AnalyzerEnv env,
+                                          @NonNull Element element,
+                                          @NonNull Class<?> path)
     {
         env.mark(element);
         String name = env.getAttrIfEmptyThrow(element,
@@ -359,9 +368,10 @@ public final class DependencyAnalyzer
                 refOrVal);
     }
 
-    private Provider.Factory searchFactory(AnalyzerEnv env,
-                                           Element element,
-                                           Class<?> type)
+    @NonNull
+    private Provider.Factory searchFactory(@NonNull AnalyzerEnv env,
+                                           @NonNull Element element,
+                                           @NonNull Class<?> type)
     {
         env.mark(element);
         List<Element> elements = element.elements();
@@ -384,9 +394,10 @@ public final class DependencyAnalyzer
                 Collections.<String>emptyList());
     }
 
-    private Provider.Factory analysisNew(AnalyzerEnv env,
-                                         Element element,
-                                         Class<?> type)
+    @NonNull
+    private Provider.Factory analysisNew(@NonNull AnalyzerEnv env,
+                                         @NonNull Element element,
+                                         @NonNull Class<?> type)
     {
         env.mark(element);
         List<Element> elements = element.elements();
@@ -426,9 +437,10 @@ public final class DependencyAnalyzer
                 , refOrVal);
     }
 
-    private Provider.Factory analysisFactory(AnalyzerEnv env,
-                                             Element element,
-                                             Class<?> type)
+    @NonNull
+    private Provider.Factory analysisFactory(@NonNull AnalyzerEnv env,
+                                             @NonNull Element element,
+                                             @NonNull Class<?> type)
     {
         env.mark(element);
         Class<?> factoryType = getTypeAttrIfErrorThrow(env, element);
@@ -481,9 +493,10 @@ public final class DependencyAnalyzer
         }
     }
 
-    private Provider.Factory analysisBuilder(AnalyzerEnv env,
-                                             Element element,
-                                             Class<?> type)
+    @NonNull
+    private Provider.Factory analysisBuilder(@NonNull AnalyzerEnv env,
+                                             @NonNull Element element,
+                                             @NonNull Class<?> type)
     {
         env.mark(element);
         Class<?> builderType = getTypeAttrIfErrorThrow(env, element);
@@ -540,9 +553,10 @@ public final class DependencyAnalyzer
                 buildMethod);
     }
 
-    private Provider.Setter analysisProperty(AnalyzerEnv env,
-                                             Element element,
-                                             Class<?> path)
+    @NonNull
+    private Provider.Setter analysisProperty(@NonNull AnalyzerEnv env,
+                                             @NonNull Element element,
+                                             @NonNull Class<?> path)
     {
         env.mark(element);
         String name = env.getAttrIfEmptyThrow(element,
@@ -556,7 +570,9 @@ public final class DependencyAnalyzer
                 refOrVal);
     }
 
-    private String getRefOrValAttr(AnalyzerEnv env, Element element)
+    @NonNull
+    private String getRefOrValAttr(@NonNull AnalyzerEnv env,
+                                   @NonNull Element element)
     {
         env.mark(element);
         String ref = env.getAttrNoThrow(element,
@@ -590,7 +606,9 @@ public final class DependencyAnalyzer
                 !TextUtils.isEmpty(ref) ? ref : val));
     }
 
-    private Provider analysisAssignValToVar(AnalyzerEnv env, Element element)
+    @NonNull
+    private Provider analysisAssignValToVar(@NonNull AnalyzerEnv env,
+                                            @NonNull Element element)
     {
         env.mark(element);
         String val = env.getAttrIfEmptyThrow(element,
@@ -614,7 +632,8 @@ public final class DependencyAnalyzer
         }
     }
 
-    private Class<?> getOwnerType(Element root)
+    @NonNull
+    private Class<?> getOwnerType(@NonNull Element root)
     {
         if (getString(R.string.dependency_string).equals(root.getName()))
         {
@@ -634,7 +653,9 @@ public final class DependencyAnalyzer
         throw new GenerateDependencyException("XML file format error in " + root.asXML());
     }
 
-    private Class<?> getTypeAttrIfErrorThrow(AnalyzerEnv env, Element element)
+    @NonNull
+    private Class<?> getTypeAttrIfErrorThrow(@NonNull AnalyzerEnv env,
+                                             @NonNull Element element)
     {
         try
         {
