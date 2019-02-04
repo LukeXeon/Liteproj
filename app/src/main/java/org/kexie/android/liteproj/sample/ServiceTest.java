@@ -7,7 +7,6 @@ import org.kexie.android.liteproj.Reference;
 import org.kexie.android.liteproj.Using;
 
 
-@Using(R.raw.test_app)
 public class ServiceTest extends LiteService
 {
     @Reference("holder")

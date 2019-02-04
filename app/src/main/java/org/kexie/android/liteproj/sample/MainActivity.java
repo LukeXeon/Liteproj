@@ -12,10 +12,10 @@ import com.orhanobut.logger.Logger;
 
 import org.kexie.android.liteproj.Reference;
 import org.kexie.android.liteproj.Using;
-import org.kexie.android.liteproj.util.TextUtil;
 
 
-@Using({R.raw.test_avtivity, R.xml.test_app})
+
+@Using({R.xml.test_app})
 public class MainActivity extends AppCompatActivity
 {
     private static final String TAG = "MainActivity";

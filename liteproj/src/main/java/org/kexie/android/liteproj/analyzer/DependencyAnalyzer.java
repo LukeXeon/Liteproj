@@ -140,10 +140,10 @@ public final class DependencyAnalyzer
     }
 
     @NonNull
-    private static Object getLetValue(@NonNull String let)
+    private static Object getVal(@NonNull String val)
     {
-        String value = let.substring(1, let.length());
-        if (let.charAt(0) == '@')
+        String value = val.substring(1, val.length());
+        if (val.charAt(0) == '@')
         {
             return value;
         } else
@@ -161,7 +161,7 @@ public final class DependencyAnalyzer
             throw new NumberFormatException(
                     String.format(
                             "The name %s does not match the rule of let"
-                            , let));
+                            , val));
         }
     }
 
@@ -285,7 +285,7 @@ public final class DependencyAnalyzer
     private Provider analysisProviderVar(AnalyzerEnv env, Element element)
     {
         env.mark(element);
-        Class<?> type = getClassAttrIfErrorThrow(env, element);
+        Class<?> type = getTypeAttrIfErrorThrow(env, element);
         List<Element> elements = element.elements();
         List<Provider.Setter> setters = new LinkedList<>();
         Provider.Factory factory = searchFactory(env, element, type);
@@ -431,7 +431,7 @@ public final class DependencyAnalyzer
                                              Class<?> type)
     {
         env.mark(element);
-        Class<?> factoryType = getClassAttrIfErrorThrow(env, element);
+        Class<?> factoryType = getTypeAttrIfErrorThrow(env, element);
         String factoryName = env.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         List<Element> elements = element.elements();
@@ -485,7 +485,7 @@ public final class DependencyAnalyzer
                                              Element element,
                                              Class<?> type)
     {
-        Class<?> builderType = getClassAttrIfErrorThrow(env, element);
+        Class<?> builderType = getTypeAttrIfErrorThrow(env, element);
         List<Element> elements = element.elements();
         Map<String, String> refOrVal = new ArrayMap<>();
         if (listNoEmpty(elements))
@@ -575,7 +575,7 @@ public final class DependencyAnalyzer
                 provider = new DependencyProvider(
                         DependencyType.SINGLETON,
                         DependencyProvider.newSingleton(
-                                getLetValue(let)),
+                                getVal(let)),
                         Collections.<Provider.Setter>emptyList());
                 env.addProvider(let, provider);
             }
@@ -600,7 +600,7 @@ public final class DependencyAnalyzer
                 provider = new DependencyProvider(
                         DependencyType.SINGLETON,
                         DependencyProvider.newSingleton(
-                                getLetValue(let)),
+                                getVal(let)),
                         Collections.<Provider.Setter>emptyList());
                 env.addProvider(let, provider);
             }
@@ -631,7 +631,7 @@ public final class DependencyAnalyzer
         throw new AnalysisException("XML file format error in " + root.asXML());
     }
 
-    private Class<?> getClassAttrIfErrorThrow(AnalyzerEnv env, Element element)
+    private Class<?> getTypeAttrIfErrorThrow(AnalyzerEnv env, Element element)
     {
         try
         {

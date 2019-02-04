@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<scope type="android.app.Application">
+<dependency owner="android.app.Application">
     <var name="test1" val="@121212"/>
     <var
         name="test2"
@@ -33,4 +33,4 @@
             <arg name="test3" ref="test3"/>
         </builder>
     </var>
-</scope>
+</dependency>
