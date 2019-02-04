@@ -3,7 +3,8 @@
     <var name="url" val="@http://www.hao123.com"/>
     <var
         name="request"
-        type="okhttp3.Request">
+        type="okhttp3.Request"
+        provider="singleton">
         <builder
             type="okhttp3.Request$Builder">
             <arg name="url" ref="url"/>
@@ -11,7 +12,8 @@
     </var>
     <var
         name="bean"
-        type="org.kexie.android.liteproj.sample.Bean">
+        type="org.kexie.android.liteproj.sample.Bean"
+        provider="factory">
         <factory
             action="test"
             type="org.kexie.android.liteproj.sample.Factory">

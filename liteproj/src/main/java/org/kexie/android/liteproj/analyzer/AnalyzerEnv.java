@@ -15,8 +15,6 @@ import java.util.Map;
 
 final class AnalyzerEnv
 {
-    private static final String TAG = "AnalyzerEnv";
-
     private Node mCurrent;
 
     private final Provider mProxyProvider;

@@ -2,6 +2,7 @@ package org.kexie.android.liteproj;
 
 import android.content.ContextWrapper;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.util.ArrayMap;
@@ -27,6 +28,8 @@ public final class DependencyManager
     //使用‘owner’来访问依赖持有者
     @SuppressWarnings("WeakerAccess")
     public static final String OWNER = "owner";
+    @SuppressWarnings("WeakerAccess")
+    public static final String NULL = "null";
     //静态表用来保存和对象关联的依赖管理器
     final static Map<Object, DependencyManager> sTable = new WeakHashMap<>();
     //持有者的类型
@@ -66,8 +69,8 @@ public final class DependencyManager
                 } else
                 {
                     throw new RuntimeException(String.format(
-                                    "Dependency conflicts occur during Mergers set = %s",
-                                    result.toString()));
+                            "Dependency conflicts occur during Mergers set = %s",
+                            result.toString()));
                 }
             }
         }
@@ -170,13 +173,17 @@ public final class DependencyManager
     }
 
     //获取依赖，若此管理器上不存在，则将请求转发到其他管理器
-    @NonNull
+    @Nullable
     @SuppressWarnings({"WeakerAccess", "unchecked"})
     public <T> T get(String name)
     {
         if (OWNER.equals(name))
         {
             return (T) getOwner();
+        }
+        if (NULL.equals(name))
+        {
+            return null;
         }
         for (Dependency dependency : mManagers.keySet())
         {
@@ -195,8 +202,7 @@ public final class DependencyManager
                             mSingletons.put(name, singleton);
                         }
                         return (T) singleton;
-                    }
-                    else//否则甩锅
+                    } else//否则甩锅
                     {
                         return manager.get(name);
                     }
@@ -219,6 +225,10 @@ public final class DependencyManager
         {
             return mOwnerType;
         }
+        if (NULL.equals(name))
+        {
+            return void.class;
+        }
         for (Dependency item : mManagers.keySet())
         {
             Provider provider = item.getProvider(name);
@@ -235,10 +245,11 @@ public final class DependencyManager
     @SuppressWarnings({"WeakerAccess"})
     public DependencyType getDependencyType(String name)
     {
-        if (OWNER.equals(name))
+        if (OWNER.equals(name) || NULL.equals(name))
         {
             return DependencyType.SINGLETON;
         }
+
         for (Dependency item : mManagers.keySet())
         {
             Provider provider = item.getProvider(name);

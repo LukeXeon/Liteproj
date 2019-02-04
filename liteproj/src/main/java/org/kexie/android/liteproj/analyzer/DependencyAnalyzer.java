@@ -160,7 +160,7 @@ public final class DependencyAnalyzer
             }
             throw new NumberFormatException(
                     String.format(
-                            "The name %s does not match the rule of let"
+                            "The name %s does not match the rule of val"
                             , val));
         }
     }
@@ -272,8 +272,8 @@ public final class DependencyAnalyzer
     private Provider analysisVar(AnalyzerEnv env, Element element)
     {
         env.mark(element);
-        String let = env.getAttrNoThrow(element, getString(R.string.val_string));
-        if (let != null)
+        String val = env.getAttrNoThrow(element, getString(R.string.val_string));
+        if (val != null)
         {
             return analysisAssignValToVar(env, element);
         } else

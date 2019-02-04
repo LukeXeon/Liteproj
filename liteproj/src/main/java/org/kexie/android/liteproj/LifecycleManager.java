@@ -31,7 +31,9 @@ final class LifecycleManager
         throw new AssertionError();
     }
 
-    private static DependencyAnalyzer sDependencyAnalyzer;
+    private static DependencyAnalyzer sAnalyzer;
+
+    private static Class<?> sApplicationType;
 
     private final static FragmentManager.FragmentLifecycleCallbacks
             sFragmentCallbacks = new FragmentManager.FragmentLifecycleCallbacks()
@@ -155,10 +157,11 @@ final class LifecycleManager
 
     static synchronized void init(@NonNull Context context)
     {
-        if (sDependencyAnalyzer == null)
+        if (sAnalyzer == null)
         {
             Application application = (Application) context.getApplicationContext();
-            sDependencyAnalyzer = new DependencyAnalyzer(application);
+            sAnalyzer = new DependencyAnalyzer(application);
+            sApplicationType = application.getClass();
             application.registerActivityLifecycleCallbacks(sActivityCallbacks);
             onAttach(application);
         }
@@ -183,19 +186,22 @@ final class LifecycleManager
                 {
                     for (int resId : using.value())
                     {
-                        dependencies.add(sDependencyAnalyzer.analysis(resId));
+                        dependencies.add(sAnalyzer.analysis(resId));
                     }
                 }
                 if (using.assets().length != 0)
                 {
                     for (String asset : using.assets())
                     {
-                        dependencies.add(sDependencyAnalyzer.analysis(asset));
+                        dependencies.add(sAnalyzer.analysis(asset));
                     }
                 }
-                if (dependencies.size() != 0)
+                if (check(owner.getClass(), dependencies))
                 {
                     manager = new DependencyManager(owner, dependencies);
+                } else
+                {
+                    throw new RuntimeException("Error in @Using resources");
                 }
             }
             DependencyManager.sTable.put(owner, manager);
@@ -204,6 +210,34 @@ final class LifecycleManager
                 inject(owner, manager);
             }
         }
+    }
+
+    private static boolean check(@NonNull Class<?> ownerType,
+                                 @NonNull List<Dependency> dependencies)
+    {
+        if (dependencies.size() == 0)
+        {
+            return false;
+        }
+        for (Dependency dependency : dependencies)
+        {
+            Class<?> dOwnerType = dependency.getOwnerType();
+            if (!dOwnerType.isAssignableFrom(ownerType))
+            {
+                if (!(FragmentActivity.class.isAssignableFrom(ownerType)
+                        || LiteViewModel.class.isAssignableFrom(ownerType)
+                        || LiteService.class.isAssignableFrom(ownerType)))
+                {
+                    if (!Fragment.class.isAssignableFrom(ownerType)
+                        && (sApplicationType.equals(dOwnerType)
+                            ||FragmentActivity.class.isAssignableFrom(dOwnerType)))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     static void onDetach(@NonNull Object owner)

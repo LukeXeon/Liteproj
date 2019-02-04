@@ -12,7 +12,6 @@ import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Map;
 
-
 public final class TypeUtil
 {
 
@@ -240,11 +239,15 @@ public final class TypeUtil
                         clazz));
     }
 
-    @NonNull
+    @Nullable
     @SuppressWarnings({"unchecked", "WeakerAccess"})
-    public static <T> T castToType(@NonNull Object obj,
+    public static <T> T castToType(@Nullable Object obj,
                                    @NonNull Class<T> targetClass)
     {
+        if (obj == null)
+        {
+            return null;
+        }
         //处理引用类型和可赋值类型
         Class<?> objClass = obj.getClass();
         if (targetClass.isAssignableFrom(objClass))
