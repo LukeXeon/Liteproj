@@ -13,6 +13,8 @@ import android.util.Log;
 
 import org.kexie.android.liteproj.analyzer.Dependency;
 import org.kexie.android.liteproj.analyzer.DependencyAnalyzer;
+import org.kexie.android.liteproj.util.TextType;
+import org.kexie.android.liteproj.util.TextUtil;
 import org.kexie.android.liteproj.util.TypeUtil;
 
 import java.lang.reflect.Field;
@@ -87,6 +89,11 @@ final class LifecycleManager
                 Reference reference = field.getAnnotation(Reference.class);
                 if (reference != null)
                 {
+                    if (!TextType.REFERENCE.equals(TextUtil.getTextType(reference.value())))
+                    {
+                        throw new IllegalStateException(
+                                String.format("The name '%s' illegal", reference.value()));
+                    }
                     int modifiers = field.getModifiers();
                     if (!Modifier.isFinal(modifiers)
                             && !Modifier.isStatic(modifiers)
@@ -112,6 +119,11 @@ final class LifecycleManager
                 Reference reference = property.getAnnotation(Reference.class);
                 if (reference != null)
                 {
+                    if (!TextType.REFERENCE.equals(TextUtil.getTextType(reference.value())))
+                    {
+                        throw new IllegalStateException(
+                                String.format("The name '%s' illegal", reference.value()));
+                    }
                     int modifiers = property.getModifiers();
                     String name = property.getName();
                     Class<?>[] parameterTypes = property.getParameterTypes();
@@ -181,7 +193,10 @@ final class LifecycleManager
                         dependencies.add(sDependencyAnalyzer.analysis(asset));
                     }
                 }
-                manager = new DependencyManager(owner, dependencies);
+                if (dependencies.size() != 0)
+                {
+                    manager = new DependencyManager(owner, dependencies);
+                }
             }
             DependencyManager.sTable.put(owner, manager);
             if (manager != null)

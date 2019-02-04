@@ -138,7 +138,7 @@ final class AnalyzerEnv
             {
                 throw new IllegalStateException(
                         "Objects cannot be generated " +
-                                "from proxy providers");
+                                "read proxy providers");
             }
 
             @NonNull

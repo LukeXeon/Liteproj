@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<scope type="android.app.Application">
+    <var name="test1" val="@121212"/>
+    <var
+        name="test2"
+        type="org.kexie.android.liteproj.sample.NewTest"
+        provider="factory">
+        <new>
+            <arg ref="test1"/>
+            <arg val="1213"/>
+        </new>
+        <field name="field" ref="test1"/>
+        <property name="property" ref="test1"/>
+    </var>
+    <var
+        name="test3"
+        type="java.lang.Object"
+        provider="singleton">
+        <factory
+            type="org.kexie.android.liteproj.sample.FactoryTest"
+            name="factory">
+            <arg ref="test2"/>
+        </factory>
+    </var>
+    <var
+        name="test4"
+        type="java.lang.Object"
+        provider="singleton">
+        <builder
+            type="org.kexie.android.liteproj.sample.BuilderTest">
+            <arg name="test1" ref="test1"/>
+            <arg name="test2" ref="test2"/>
+            <arg name="test3" ref="test3"/>
+        </builder>
+    </var>
+</scope>

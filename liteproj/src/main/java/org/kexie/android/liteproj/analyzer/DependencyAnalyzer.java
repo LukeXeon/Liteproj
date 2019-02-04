@@ -13,7 +13,9 @@ import android.util.Log;
 
 import org.dom4j.Attribute;
 import org.dom4j.Document;
+import org.dom4j.DocumentException;
 import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
 import org.kexie.android.liteproj.DependencyType;
 import org.kexie.android.liteproj.R;
 import org.kexie.android.liteproj.util.TextType;
@@ -22,6 +24,7 @@ import org.kexie.android.liteproj.util.TypeUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,13 +32,134 @@ import java.util.List;
 public final class DependencyAnalyzer
         extends ContextWrapper
 {
+    private interface TextConverter
+    {
+        @NonNull
+        Object valueOf(@NonNull String value);
+    }
+
     private static final String TAG = "DependencyAnalyzer";
 
+    private static final List<TextConverter> sTextConverters = newTextConverters();
+
+    private final SAXReader mSAXReader = new SAXReader();
+
     private final LruCache<Object, Dependency> mResultCache;
+
+    @NonNull
+    private Document readXml(@NonNull InputStream stream,
+                                   boolean isCompressed)
+    {
+        if (!isCompressed)
+        {
+            try
+            {
+                return mSAXReader.read(stream);
+            } catch (DocumentException e)
+            {
+                throw new RuntimeException(e);
+            }
+        } else
+        {
+            try
+            {
+                return new AXmlReader().read(stream);
+            } catch (IOException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
 
     private static boolean listNoEmpty(@Nullable List<?> list)
     {
         return list != null && list.size() != 0;
+    }
+
+    @NonNull
+    private static List<TextConverter> newTextConverters()
+    {
+        List<TextConverter> result = new LinkedList<>();
+        result.add(new TextConverter()
+        {
+            @NonNull
+            @Override
+            public Object valueOf(@NonNull String value)
+            {
+                if (!Character.isDigit(value.charAt(0)))
+                {
+                    if (value.length() == 1)
+                    {
+                        return value.charAt(0);
+                    } else if ("true".equals(value) || "false".equals(value))
+                    {
+                        return Boolean.valueOf(value);
+                    }
+                }
+                throw new NumberFormatException();
+            }
+        });
+        for (final Class<?> type : new Class<?>[]{Byte.class,
+                Short.class,
+                Integer.class,
+                Long.class,
+                Float.class,
+                Double.class})
+        {
+            result.add(new TextConverter()
+            {
+                @NonNull
+                @Override
+                public Object valueOf(@NonNull String value)
+                {
+                    try
+                    {
+                        return type.getMethod("valueOf", String.class)
+                                .invoke(null, value);
+                    } catch (IllegalAccessException
+                            | NoSuchMethodException e)
+                    {
+                        throw new AssertionError(e);
+                    } catch (InvocationTargetException e)
+                    {
+                        if (e.getCause() instanceof NumberFormatException)
+                        {
+                            throw (NumberFormatException) e.getCause();
+                        } else
+                        {
+                            throw new AssertionError(e);
+                        }
+                    }
+                }
+            });
+        }
+        return result;
+    }
+
+    @NonNull
+    private static Object getLetValue(@NonNull String let)
+    {
+        String value = let.substring(1, let.length());
+        if (let.charAt(0) == '@')
+        {
+            return value;
+        } else
+        {
+            for (TextConverter valueOf : sTextConverters)
+            {
+                try
+                {
+                    return valueOf.valueOf(value);
+                } catch (NumberFormatException ignored)
+                {
+
+                }
+            }
+            throw new NumberFormatException(
+                    String.format(
+                            "The name %s does not match the rule of let"
+                            , let));
+        }
     }
 
     private int getCacheSize()
@@ -78,14 +202,14 @@ public final class DependencyAnalyzer
                 case "raw":
                 {
                     dependency = analysisDocument(
-                            TextUtil.getDocument(getResources().openRawResource(xml),
+                            readXml(getResources().openRawResource(xml),
                                     false));
                 }
                 break;
                 case "xml":
                 {
                     dependency = analysisDocument(
-                            TextUtil.getDocument(getResources().openRawResource(xml),
+                            readXml(getResources().openRawResource(xml),
                                     true));
                 }
                 break;
@@ -109,7 +233,7 @@ public final class DependencyAnalyzer
             try (InputStream stream = getAssets().open(asset))
             {
                 dependency = analysisDocument(
-                        TextUtil.getDocument(stream, false)
+                        readXml(stream, false)
                 );
                 mResultCache.put(asset, dependency);
             } catch (IOException e)
@@ -345,7 +469,7 @@ public final class DependencyAnalyzer
                 provider = new DependencyProvider(
                         DependencyType.SINGLETON,
                         DependencyProvider.newSingleton(
-                                TextUtil.getConstant(let)),
+                                getLetValue(let)),
                         Collections.<Provider.Setter>emptyList());
                 env.addProvider(let, provider);
             }
@@ -370,7 +494,7 @@ public final class DependencyAnalyzer
                 provider = new DependencyProvider(
                         DependencyType.SINGLETON,
                         DependencyProvider.newSingleton(
-                                TextUtil.getConstant(let)),
+                                getLetValue(let)),
                         Collections.<Provider.Setter>emptyList());
                 env.addProvider(let, provider);
             }
