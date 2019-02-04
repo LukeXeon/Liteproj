@@ -1,6 +1,12 @@
 # Liteproj
-- 历经半个学期我的开源框架终于发布了Preview版本，这个开源框架是一个运行在Android上的控制反转（IoC）容器，能够帮助你自动的管理类的依赖并提供依赖注入（DI）。
-- 与绝大多数Android插件相同，它使用Gradle进行构建，若想要使用它你需要在build.gradle文件中添加如下代码。
+
+![](https://jitpack.io/v/LukeXeon/Liteproj.svg)
+
+Liteproj是一个运行在Android上轻量级的依赖注入框架，它使用xml进行依赖配置，并允许对Android中的各种组件进行依赖注入。
+
+## 如何使用？
+
+与绝大多数Android插件相同，它使用gradle进行构建，若想使用它你的项目必须依赖appcompat组件包，并且需要在build.gradle文件中添加如下代码。
 
 ```
 	allprojects {
@@ -11,96 +17,106 @@
 	}
 
 	dependencies {
-	        implementation 'com.github.LukeXeon:kexie-android-arch:+'
+	        implementation 'com.github.LukeXeon:Liteproj:+'
 	}
 ```
-- 但它又与绝大多数Android插件不同，它不需要你在Activity或者Application中进行初始化（对的，不需要自定义的Application类，也不需要你去调用奇怪的init方法再传入一个Context实例），它也没有使用注解处理器，而是完全依赖AppCompat组件包和反射实现，并使用ContentProvider来hook程序的启动流程完成自身初始化。
-- 有一句话说得好，那就是不要重复发明轮子，也许有人会问我，Android上不是已经又Google开发Dagger2作为依赖注入插件使用了吗？没错，是这样的，但这也是我开发这款插件的原因之一，如果用过Dagger2的同学应该知道，Dagger2的依赖关系是使用java硬编码来实现的，但是我相信包括我在内的很多用过Spring framework的同学一定更习惯于使用xml来配置依赖注入，所以就有了这个库的诞生。
-- 注意，此库必须依赖AppCompat组件包且最好时26以上的，这意味着，你所使用的Activity必须是AppCompatActivity，你所使用的Fragment必须是android.support.v4.app.Fragment，Application则没有限制，目前此插件只支持三种类的依赖注入，分别是AppCompatActivity的子类，v4包下Fragment的子类，以及Application的子类，并且xml文件只支持res/raw文件夹下的xml文件。依赖注入会在onCreate调用时完成。
 
-你可以像这样编写xml文件。
+但它又与绝大多数Android插件不同，它不需要你在Activity或者Application中进行初始化（对的，不需要自定义的Application类，也不需要你去调用奇怪的init方法再传入一个Context实例），框架内部已经使用ContentProvider自动完成了初始化，并能够在多进程的情况下正常工作，你完全不必关注初始化问题。
+
+接下来，你需要像这样编写依赖配置的xml文件：
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
-<scope owner="org.kexie.android.liteproj.sample.MainActivity">
+<dependency owner="android.app.Application">
+    <var name="url" val="@http://www.hao123.com"/>
+    <var
+        name="request"
+        type="okhttp3.Request"
+        provider="singleton">
+        <builder
+            type="okhttp3.Request$Builder">
+            <arg name="url" ref="url"/>
+        </builder>
+    </var>
     <var
         name="bean"
-        class="org.kexie.android.liteproj.sample.Bean"
-        provider="singleton"/>
-    <var
-        name="factory"
-        class="org.kexie.android.liteproj.sample.Factory"
+        type="org.kexie.android.liteproj.sample.Bean"
         provider="factory">
-        <new name="test">
-            <arg let="@xxxxxxxx"/>
-        </new>
+        <factory
+            action="test"
+            type="org.kexie.android.liteproj.sample.Factory">
+            <arg val="@asdasdd"/>
+        </factory>
         <field
             name="field"
-            let="123.1"/>
+            val="100"/>
         <field
             name="string"
-            let="@kexie niu bi"/>
+            val="@adadadad"/>
         <property
-            name="Object"
-            ref="bean"/>
+            name="object"
+            ref="owner"/>
     </var>
-</scope>
+    <var
+        name="holder"
+        type="org.kexie.android.liteproj.sample.AppHolderTest">
+        <new>
+            <arg ref="owner"/>
+        </new>
+    </var>
+</dependency>
 ```
 
-然后定义一个javabean对象
+并在Java中使用注解标记Activity：
 
 ```java
-public class Bean
-{
-    public float field;
-
-    public String string;
-
-    Object object;
-
-    public void setObject(Object object)
-    {
-        this.object = object;
-    }
-}
-```
-
-并在MainActivity中使用@Using注解来引用res/raw文件夹下的xml文件，并使用  @Reference("use by name") 来引用xml中的依赖，然后直接运行你的App，就可以看到这些对象居然都被自动设置好了，是不是很神奇？
-
-```java
-@Using(R.raw.test_main)
+@Using({R.xml.all_test})
 public class MainActivity extends AppCompatActivity
 {
     private static final String TAG = "MainActivity";
 
-    @Reference("factory")
-    private Bean o;
+    @Reference("request")
+    Request request;
+
+    @Reference("bean")
+    Bean bean;
+
+    @Reference("holder")
+    AppHolderTest holderTest;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Logger.d("" + o + "  " + o.string + "  " + o.object);
+        Logger.d(request + "\n" + bean + "\n" + holderTest.context);
     }
 }
 ```
-- 如何编写配置文件？这是很简单的，如果你有过编写Spring MVC的经验，相信你会很快上手。
-- 在xml中，你可以使用var定义一个变量提供器，并用name指定他在上下文的唯一名字，用class指定它的类型，用provider指定它的提供模式有singleton（单例）和factory两种模式，singleton保证每次都返回同一对象，而factory保证每次都创建新的对象。
-- 在var便签，之下还可以用new标签指定其构造函数，arg 标签可以引用xml上下文中的定义变量或常量，使用ref引用变量，使用let引用常量，当let以@开头时识别为字符串，否则当作数字处理。
-- 也许你已经发现了xml scope中的owner 属性，它是必须的，owner规定了这个依赖关系只能被哪种类型所使用，使用@Using注解时必须与owner所指定的类型所匹配，但是也有例外，@Using注解可以以数组的形式添加多个xml资源，AppCompatActivity可以引用owner为Application的xml，Fragment可以引用AppCompatActivity和Application的xml，框架会自动处理他们之间的联系，你无需关心，必要时，可以在xml中使用ref=“owner”对象来获取依赖的持有者（比如当你需要一个Activity的Context时）。
-- 差不多就这些了，github地址：https://github.com/LukeXeon/kexie-android-arch 接下来还会持续更新并完善文档吧，让功能尽快稳定下来，让它变成一个能用，敢用的框架。
 
-依赖：
-```
-com.android.support:appcompat-v7:+
-com.android.support:design:+
-android.arch.lifecycle:extensions:+
-com.github.CymChad:BaseRecyclerViewAdapterHelper:+
-org.dom4j:dom4j:+
-```
+然后直接运行你的App，就可以看到这些对象居然都被自动设置好了，是不是很神奇？
 
-USE MIT LICENSE
+- 目前Liteproj对Application，Activity，Fragment，Service，ViewModel这5种组件提供依赖注入支持，相应类型的实例可以通过`DependencyManager.from(owner)`获得该实例的`DependencyManager`，但是注意Activity和Fragment是通过appcompat的v4包下的FragmentActivity，以及Fragment提供支持，Service和ViewModel是通过LiteService和LiteViewModel提供支持，Application则没有限制。
+
+- `@Using`注解可以使用res/xml，res/raw以及assets文件夹下的xml文件，一个类型可以引用多个配置文件，对于Activity，ViewModel和Service，它可以使用Application的依赖，对于Fragment，它可以使用Activity和Application的依赖，你只需要在`@Using`注解中启用，剩下的事情框架会帮你搞定，这有助于各组件的高效解耦。
+
+- `@Reference`注解可以直接引用xml配置文件中所命名的依赖。
+
+- 在xml配置文件中，必须使用后owner标注此xml配置文件所兼容的类型，并且可以使用ref属性引用owner获取到该类型的实例。你可以使用var标签创建一个引用依赖或者一个常量依赖，但无论时那种依赖都必须指定其name属性。可以使用var标签以及他的val属性创建一个常量依赖，若val属性的值以@开头，则将其转换为一个字符串，否则转换为数字或bool值。当使用var标签创建引用依赖时，可以使用provider指定其提供模式，分为（singleton）单例以及（factory）工厂两种模式，使用单例模式时，每次都会提供相同对象，默认的提供器为factory。你可以用builder模式，构造函数，工厂函数，三种方式创建对象，并且使用field以及property，为java bean赋值。若要使用null，则使用ref属性引用null即可，null和owner是默认自带的提供器，值得注意的是工厂模式以及builder模式不允许返回null值，因为这没有意义，自带的null提供器只是为了兼容某些参数而设计的。
+
+## 为什么会有这个库？
+
+有一句话说得好，那就是不要重复发明轮子，也许有人会问我，Android上不是已经有Google开发Dagger2作为依赖注入插件使用了吗？没错，是这样的，但这也是我开发这款插件的原因之一，如果用过Dagger2的同学应该知道，Dagger2的依赖关系是使用java硬编码来实现的，但是我相信包括我在内的很多用过Spring framework的同学一定更习惯于使用xml来配置依赖注入，所以就有了这个库的诞生。
+
+使用xml是有优势的，它能更明确的表达依赖关系，要不然也不会有这么多应用程序选择xml作为配置文件。Liteproj的目前的实现中也没有使用注解处理器而是使用了反射，因为Liteproj所追求的并非性能，而是功能和轻量化，它的诞生并不是为了取代Dagger2或者其他的一些依赖注入工具，而是在它们都没有涉及的领域做一个补全。目前Liteproj还在开发中，可能会存在一些问题，我会保持高频率的更新。如果你在使用这个库时发现了某个问题，欢迎给我留言，我们可以共同解决。
+
+## 感谢
+
+- xgouchet/AXML https://github.com/xgouchet/AXML
+
+- dom4j/dom4j https://github.com/dom4j/dom4j
+
+## 使用MIT协议
 
 ```
 MIT License
