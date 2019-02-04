@@ -19,7 +19,6 @@ import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.kexie.android.liteproj.DependencyType;
 import org.kexie.android.liteproj.R;
-import org.kexie.android.liteproj.util.Filter;
 import org.kexie.android.liteproj.util.TextType;
 import org.kexie.android.liteproj.util.TextUtil;
 import org.kexie.android.liteproj.util.TypeUtil;
@@ -28,7 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -400,7 +398,17 @@ public final class DependencyAnalyzer
                 String name = item.getName();
                 if (getString(R.string.arg_string).equals(name))
                 {
-                    refOrVal.add(getRefOrValAttr(env, item));
+                    String temp = getRefOrValAttr(env, item);
+                    if (!refOrVal.contains(temp))
+                    {
+                        refOrVal.add(temp);
+                    }
+                    else
+                    {
+                        throw env.fromMessageThrow(
+                                String.format("The name '%s' already exist", temp)
+                        );
+                    }
                 } else
                 {
                     throw env.fromMessageThrow("Tag 'arg' no found");
@@ -436,7 +444,16 @@ public final class DependencyAnalyzer
                 String name = item.getName();
                 if (getString(R.string.arg_string).equals(name))
                 {
-                    refOrVal.add(getRefOrValAttr(env, item));
+                    String temp = getRefOrValAttr(env, item);
+                    if (!refOrVal.contains(temp))
+                    {
+                        refOrVal.add(temp);
+                    } else
+                    {
+                        throw env.fromMessageThrow(
+                                String.format("The name '%s' already exist", temp)
+                        );
+                    }
                 } else
                 {
                     throw env.fromMessageThrow("Tag 'arg' no found");
@@ -453,7 +470,8 @@ public final class DependencyAnalyzer
                 classes);
         if (TypeUtil.isAssignToType(factoryMethod.getReturnType(), type))
         {
-            return DependencyProvider.newFactory(factoryMethod, refOrVal);
+            return DependencyProvider.newFactory(factoryMethod,
+                    refOrVal);
         } else
         {
             throw env.fromMessageThrow(
