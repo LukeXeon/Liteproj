@@ -1,4 +1,4 @@
-package org.kexie.android.liteporj;
+package org.kexie.android.liteproj;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;
