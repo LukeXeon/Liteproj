@@ -11,6 +11,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 final class DependencyProvider implements Provider
@@ -106,9 +107,49 @@ final class DependencyProvider implements Provider
         };
     }
 
+    static Factory newBuilder(@NonNull final Class<?> builderType,
+                              @NonNull final Map<Method, String> references,
+                              @NonNull final Method build)
+    {
+        return new Factory()
+        {
+            @NonNull
+            @SuppressWarnings("unchecked")
+            @Override
+            public <T> T newInstance(@NonNull DependencyManager dependencyManager)
+            {
+                try
+                {
+                    Object builder = builderType.newInstance();
+                    for (Map.Entry<Method, String> entry
+                            : references.entrySet())
+                    {
+                        Method setter = entry.getKey();
+                        setter.invoke(builder, TypeUtil.castToType(
+                                dependencyManager.get(entry.getValue()),
+                                setter.getParameterTypes()[0]));
+                    }
+                    return (T) build.invoke(builder);
+                } catch (InstantiationException
+                        | IllegalAccessException
+                        | InvocationTargetException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+
+            @NonNull
+            @Override
+            public Class<?> getResultType()
+            {
+                return build.getReturnType();
+            }
+        };
+    }
+
     @NonNull
-    static Factory newFactory(@NonNull final Constructor<?> constructor,
-                              @NonNull final List<String> references)
+    static Factory newNew(@NonNull final Constructor<?> constructor,
+                          @NonNull final List<String> references)
     {
         return new Factory()
         {

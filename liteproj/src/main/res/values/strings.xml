@@ -5,17 +5,14 @@
     <string name="provider_string">provider</string>
     <string name="property_string">property</string>
     <string name="new_string">new</string>
-    <string name="new_normal_string">\@new</string>
     <string name="var_string">var</string>
     <string name="arg_string">arg</string>
     <string name="ref_string">ref</string>
-    <string name="class_string">class</string>
+    <string name="type_string">type</string>
     <string name="name_string">name</string>
     <string name="singleton_string">singleton</string>
     <string name="factory_string">factory</string>
-    <string name="scope_string">scope</string>
-    <string name="raw_res_header_string">\@raw/</string>
-    <string name="let_string">let</string>
-    <string name="raw_string">raw</string>
+    <string name="dependency_string">dependency</string>
+    <string name="val_string">val</string>
     <string name="builder_string">builder</string>
 </resources>

@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
+import android.support.v4.util.ArrayMap;
 import android.support.v4.util.LruCache;
 import android.text.TextUtils;
 import android.util.Log;
@@ -18,6 +19,7 @@ import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.kexie.android.liteproj.DependencyType;
 import org.kexie.android.liteproj.R;
+import org.kexie.android.liteproj.util.Filter;
 import org.kexie.android.liteproj.util.TextType;
 import org.kexie.android.liteproj.util.TextUtil;
 import org.kexie.android.liteproj.util.TypeUtil;
@@ -25,9 +27,12 @@ import org.kexie.android.liteproj.util.TypeUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public final class DependencyAnalyzer
         extends ContextWrapper
@@ -48,7 +53,7 @@ public final class DependencyAnalyzer
 
     @NonNull
     private Document readXml(@NonNull InputStream stream,
-                                   boolean isCompressed)
+                             boolean isCompressed)
     {
         if (!isCompressed)
         {
@@ -269,7 +274,7 @@ public final class DependencyAnalyzer
     private Provider analysisVar(AnalyzerEnv env, Element element)
     {
         env.mark(element);
-        String let = env.getAttrNoThrow(element, getString(R.string.let_string));
+        String let = env.getAttrNoThrow(element, getString(R.string.val_string));
         if (let != null)
         {
             return analysisLetAssignToVar(env, element);
@@ -282,27 +287,28 @@ public final class DependencyAnalyzer
     private Provider analysisProviderVar(AnalyzerEnv env, Element element)
     {
         env.mark(element);
-        Class<?> path = getClassAttr(env, element);
+        Class<?> type = getClassAttrIfErrorThrow(env, element);
         List<Element> elements = element.elements();
         List<Provider.Setter> setters = new LinkedList<>();
-        Provider.Factory factory = doSearchNew(env, element, path);
-        path = factory.getResultType();
+        Provider.Factory factory = searchFactory(env, element, type);
         if (listNoEmpty(elements))
         {
             for (Element item : elements)
             {
                 env.mark(item);
                 String name = item.getName();
-                if (getString(R.string.new_string).equals(name))
+                if (getString(R.string.new_string).equals(name)
+                        || getString(R.string.factory_string).equals(name)
+                        || getString(R.string.builder_string).equals(name))
                 {
                     continue;
                 }
                 if (getString(R.string.field_string).equals(name))
                 {
-                    setters.add(analysisField(env, item, path));
+                    setters.add(analysisField(env, item, type));
                 } else if (getString(R.string.property_string).equals(name))
                 {
-                    setters.add(analysisProperty(env, item, path));
+                    setters.add(analysisProperty(env, item, type));
                 } else
                 {
                     throw env.fromMessageThrow(
@@ -346,114 +352,196 @@ public final class DependencyAnalyzer
         env.mark(element);
         String name = env.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
-        String refOrLet = getRefOrLetAttr(env, element);
+        String refOrVal = getRefOrValAttr(env, element);
         return DependencyProvider.newSetter(
                 TypeUtil.getTypeField(path,
                         name,
-                        env.getResultTypeIfNullThrow(refOrLet)),
-                refOrLet);
+                        env.getResultTypeIfNullThrow(refOrVal)),
+                refOrVal);
     }
 
-
-    private Provider.Factory doSearchNew(AnalyzerEnv env, Element element, Class<?> path)
+    private Provider.Factory searchFactory(AnalyzerEnv env,
+                                           Element element,
+                                           Class<?> type)
     {
         env.mark(element);
         List<Element> elements = element.elements();
-        Provider.Factory factory = null;
+        for (Element item : elements)
+        {
+            env.mark(item);
+            if (getString(R.string.new_string).equals(item.getName()))
+            {
+                return analysisNew(env, item, type);
+            } else if (getString(R.string.factory_string).equals(item.getName()))
+            {
+                return analysisFactory(env, item, type);
+            } else if (getString(R.string.builder_string).equals(item.getName()))
+            {
+                return analysisBuilder(env, item, type);
+            }
+        }
+        return DependencyProvider.newNew(
+                TypeUtil.getTypeConstructor(type, null),
+                Collections.<String>emptyList());
+    }
+
+    private Provider.Factory analysisNew(AnalyzerEnv env,
+                                         Element element,
+                                         Class<?> type)
+    {
+        env.mark(element);
+        List<Element> elements = element.elements();
+        List<String> refOrVal = new LinkedList<>();
         if (listNoEmpty(elements))
         {
             for (Element item : elements)
             {
                 env.mark(item);
-                if (getString(R.string.new_string).equals(item.getName()))
-                {
-                    if (factory == null)
-                    {
-                        factory = analysisNew(env, item, path);
-                    } else
-                    {
-                        throw env.fromMessageThrow("The 'new' tag must only one");
-                    }
-                }
-            }
-        }
-        return factory == null
-                ? DependencyProvider.newFactory(
-                TypeUtil.getTypeConstructor(path,
-                        null),
-                Collections.<String>emptyList())
-                : factory;
-    }
-
-    private Provider.Setter analysisProperty(AnalyzerEnv env, Element element, Class<?> path)
-    {
-        env.mark(element);
-        String name = env.getAttrIfEmptyThrow(element,
-                getString(R.string.name_string));
-        String refOrLet = getRefOrLetAttr(env, element);
-        return DependencyProvider.newSetter(
-                TypeUtil.getTypeProperty(
-                        path,
-                        name,
-                        env.getResultTypeIfNullThrow(refOrLet)),
-                refOrLet);
-    }
-
-    private Provider.Factory analysisNew(AnalyzerEnv env, Element element, Class<?> path)
-    {
-        env.mark(element);
-        List<Element> elements = element.elements();
-        List<String> refOrLet = new LinkedList<>();
-        if (listNoEmpty(elements))
-        {
-            for (Element item : elements)
-            {
-                env.mark(element);
                 String name = item.getName();
-                if (getString(R.string.let_string).equals(name)
-                        || getString(R.string.arg_string).equals(name))
+                if (getString(R.string.arg_string).equals(name))
                 {
-                    refOrLet.add(getRefOrLetAttr(env, item));
+                    refOrVal.add(getRefOrValAttr(env, item));
                 } else
                 {
                     throw env.fromMessageThrow("Tag 'arg' no found");
                 }
             }
         }
-        Class<?>[] classes = new Class<?>[refOrLet.size()];
+        Class<?>[] classes = new Class<?>[refOrVal.size()];
         for (int i = 0; i < classes.length; i++)
         {
-            classes[i] = env.getResultTypeIfNullThrow(refOrLet.get(i));
+            classes[i] = env.getResultTypeIfNullThrow(refOrVal.get(i));
         }
-        String isCustom = env.getAttrNoThrow(element,
+        return DependencyProvider.newNew(
+                TypeUtil.getTypeConstructor(type,
+                        classes)
+                , refOrVal);
+    }
+
+    private Provider.Factory analysisFactory(AnalyzerEnv env,
+                                             Element element,
+                                             Class<?> type)
+    {
+        env.mark(element);
+        Class<?> factoryType = getClassAttrIfErrorThrow(env, element);
+        String factoryName = env.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
-        isCustom = isCustom != null
-                && !getString(R.string.new_normal_string).equals(isCustom)
-                ? isCustom : null;
-        if (isCustom != null)
+        List<Element> elements = element.elements();
+        List<String> refOrVal = new LinkedList<>();
+        if (listNoEmpty(elements))
         {
-            return DependencyProvider.newFactory(
-                    TypeUtil.getTypeFactory(
-                            path,
-                            isCustom,
-                            classes),
-                    refOrLet);
+            for (Element item : elements)
+            {
+                env.mark(item);
+                String name = item.getName();
+                if (getString(R.string.arg_string).equals(name))
+                {
+                    refOrVal.add(getRefOrValAttr(env, item));
+                } else
+                {
+                    throw env.fromMessageThrow("Tag 'arg' no found");
+                }
+            }
+        }
+        Class<?>[] classes = new Class<?>[refOrVal.size()];
+        for (int i = 0; i < classes.length; i++)
+        {
+            classes[i] = env.getResultTypeIfNullThrow(refOrVal.get(i));
+        }
+        Method factoryMethod = TypeUtil.getTypeFactory(factoryType,
+                factoryName,
+                classes);
+        if (TypeUtil.isAssignToType(factoryMethod.getReturnType(), type))
+        {
+            return DependencyProvider.newFactory(factoryMethod, refOrVal);
         } else
         {
-            return DependencyProvider.newFactory(
-                    TypeUtil.getTypeConstructor(path,
-                            classes)
-                    , refOrLet);
+            throw env.fromMessageThrow(
+                    String.format("Return type no match (form %s to %s)",
+                            factoryMethod.getReturnType(),
+                            type));
         }
     }
 
-    private String getRefOrLetAttr(AnalyzerEnv env, Element element)
+    private Provider.Factory analysisBuilder(AnalyzerEnv env,
+                                             Element element,
+                                             Class<?> type)
+    {
+        Class<?> builderType = getClassAttrIfErrorThrow(env, element);
+        List<Element> elements = element.elements();
+        Map<String, String> refOrVal = new ArrayMap<>();
+        if (listNoEmpty(elements))
+        {
+            for (Element item : elements)
+            {
+                env.mark(item);
+                String name = item.getName();
+                if (getString(R.string.arg_string).equals(name))
+                {
+                    String argName = env.getAttrIfEmptyThrow(element,
+                            getString(R.string.name_string));
+                    if (!refOrVal.containsKey(argName))
+                    {
+                        refOrVal.put(argName, getRefOrValAttr(env, item));
+                    } else
+                    {
+                        throw env.fromMessageThrow(
+                                String.format("The name '%s' already exist", argName)
+                        );
+                    }
+                } else
+                {
+                    throw env.fromMessageThrow("Tag 'arg' no found");
+                }
+            }
+        }
+        Map<Method, String> setters = new ArrayMap<>();
+        Method buildMethod = TypeUtil.getTypeInstanceMethod(builderType,
+                "build",
+                null);
+        if (!TypeUtil.isAssignToType(buildMethod.getReturnType(), type))
+        {
+            throw env.fromMessageThrow(
+                    String.format("Return type no match (form %s to %s)",
+                            buildMethod.getReturnType(),
+                            type));
+        }
+        for (Map.Entry<String, String> entry : refOrVal.entrySet())
+        {
+            setters.put(TypeUtil.getTypeInstanceMethod(
+                    builderType,
+                    entry.getKey(),
+                    new Class<?>[]{env.getResultTypeIfNullThrow(entry.getValue())}),
+                    entry.getValue());
+        }
+        return DependencyProvider.newBuilder(builderType,
+                setters,
+                buildMethod);
+    }
+
+    private Provider.Setter analysisProperty(AnalyzerEnv env,
+                                             Element element,
+                                             Class<?> path)
+    {
+        env.mark(element);
+        String name = env.getAttrIfEmptyThrow(element,
+                getString(R.string.name_string));
+        String refOrVal = getRefOrValAttr(env, element);
+        return DependencyProvider.newSetter(
+                TypeUtil.getTypeProperty(
+                        path,
+                        name,
+                        env.getResultTypeIfNullThrow(refOrVal)),
+                refOrVal);
+    }
+
+    private String getRefOrValAttr(AnalyzerEnv env, Element element)
     {
         env.mark(element);
         String ref = env.getAttrNoThrow(element,
                 getString(R.string.ref_string));
         String let = env.getAttrNoThrow(element,
-                getString(R.string.let_string));
+                getString(R.string.val_string));
         if (ref != null)
         {
             if (TextType.REFERENCE.equals(
@@ -485,7 +573,7 @@ public final class DependencyAnalyzer
     {
         env.mark(element);
         String let = env.getAttrIfEmptyThrow(element,
-                getString(R.string.let_string));
+                getString(R.string.val_string));
         if (TextType.CONSTANT.equals(TextUtil.getTextType(let)))
         {
             Provider provider = env.getProvider(let);
@@ -507,7 +595,7 @@ public final class DependencyAnalyzer
 
     private Class<?> getOwnerType(Element root)
     {
-        if (getString(R.string.scope_string).equals(root.getName()))
+        if (getString(R.string.dependency_string).equals(root.getName()))
         {
             Attribute attribute = root.attribute(getString(R.string.owner_string));
             if (attribute != null && !TextUtils.isEmpty(attribute.getName()))
@@ -525,13 +613,13 @@ public final class DependencyAnalyzer
         throw new AnalysisException("XML file format error in " + root.asXML());
     }
 
-    private Class<?> getClassAttr(AnalyzerEnv env, Element element)
+    private Class<?> getClassAttrIfErrorThrow(AnalyzerEnv env, Element element)
     {
         try
         {
             return Class.forName(env.getAttrIfEmptyThrow(
                     element,
-                    getString(R.string.class_string)
+                    getString(R.string.type_string)
             ));
         } catch (ClassNotFoundException e)
         {

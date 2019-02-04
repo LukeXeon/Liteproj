@@ -30,7 +30,7 @@ public final class TypeUtil
         public boolean filter(@NonNull Method item)
         {
             return void.class.equals(item.getReturnType())
-                    && !Modifier.isStatic(item.getModifiers());
+                    && sInstanceMethodFilter.filter(item);
         }
     };
 
@@ -52,6 +52,18 @@ public final class TypeUtil
         {
             return !Modifier.isFinal(item.getModifiers())
                     && !Modifier.isStatic(item.getModifiers());
+        }
+    };
+
+    private static final Filter<Method> sInstanceMethodFilter
+            = new Filter<Method>()
+    {
+        @Override
+        public boolean filter(@NonNull Method item)
+        {
+            int modifiers = item.getModifiers();
+            return !Modifier.isStatic(modifiers)
+                    && !Modifier.isAbstract(modifiers);
         }
     };
 
@@ -94,6 +106,7 @@ public final class TypeUtil
         return getTypeConstructor(clazz, classes, null);
     }
 
+
     @NonNull
     @SuppressWarnings("WeakerAccess")
     public static Field getTypeField(@NonNull Class<?> clazz,
@@ -121,6 +134,14 @@ public final class TypeUtil
                     sClass,
                     field.getType()));
         }
+    }
+
+    @NonNull
+    public static Method getTypeInstanceMethod(@NonNull Class<?> clazz,
+                                               @NonNull String name,
+                                               @Nullable Class<?>[] classes)
+    {
+        return getTypeMethod(clazz, name, classes, sInstanceMethodFilter);
     }
 
     @NonNull
