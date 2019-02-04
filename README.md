@@ -1,6 +1,7 @@
 # Liteproj
 
 ![](https://jitpack.io/v/LukeXeon/Liteproj.svg)
+[![](https://img.shields.io/badge/license-MIT-FF0080.svg)](https://github.com/LukeXeon/Liteproj/blob/master/LICENSE)
 
 Liteproj是一个运行在Android上轻量级的依赖注入框架，它使用xml进行依赖配置，并允许对Android中的各种组件进行依赖注入。
 
