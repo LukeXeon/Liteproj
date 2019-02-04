@@ -65,7 +65,8 @@ final class AnalyzerEnv
 
     void addProvider(@NonNull String name, @NonNull Provider provider)
     {
-        if (!DependencyManager.OWNER.equals(name)
+        if (!DependencyManager.NULL.equals(name)
+                && !DependencyManager.OWNER.equals(name)
                 && !mProviders.containsKey(name))
         {
             mProviders.put(name, provider);
