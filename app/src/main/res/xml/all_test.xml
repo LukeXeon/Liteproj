@@ -1,36 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <dependency owner="android.app.Application">
-    <var name="test1" val="@121212"/>
+    <var name="url" val="@http://www.hao123.com"/>
     <var
-        name="test2"
-        type="org.kexie.android.liteproj.sample.NewTest"
-        provider="factory">
-        <new>
-            <arg ref="test1"/>
-            <arg val="1213"/>
-        </new>
-        <field name="field" ref="test1"/>
-        <property name="property" ref="test1"/>
-    </var>
-    <var
-        name="test3"
-        type="java.lang.Object"
-        provider="singleton">
-        <factory
-            type="org.kexie.android.liteproj.sample.FactoryTest"
-            name="factory">
-            <arg ref="test2"/>
-        </factory>
-    </var>
-    <var
-        name="test4"
-        type="java.lang.Object"
-        provider="singleton">
+        name="request"
+        type="okhttp3.Request">
         <builder
-            type="org.kexie.android.liteproj.sample.BuilderTest">
-            <arg name="test1" ref="test1"/>
-            <arg name="test2" ref="test2"/>
-            <arg name="test3" ref="test3"/>
+            type="okhttp3.Request$Builder">
+            <arg name="url" ref="url"/>
         </builder>
+    </var>
+    <var
+        name="bean"
+        type="org.kexie.android.liteproj.sample.Bean">
+        <factory
+            action="test"
+            type="org.kexie.android.liteproj.sample.Factory">
+            <arg val="@asdasdd"/>
+        </factory>
+        <field
+            name="field"
+            val="100"/>
+        <field
+            name="string"
+            val="@adadadad"/>
+        <property
+            name="object"
+            ref="owner"/>
+    </var>
+    <var
+        name="holder"
+        type="org.kexie.android.liteproj.sample.AppHolderTest">
+        <new>
+            <arg ref="owner"/>
+        </new>
     </var>
 </dependency>

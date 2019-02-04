@@ -9,7 +9,7 @@ import org.dom4j.Attribute;
 import org.dom4j.Element;
 import org.dom4j.Node;
 import org.kexie.android.liteproj.DependencyManager;
-import org.kexie.android.liteproj.DependencyType;
+import org.kexie.android.liteproj.GenerateDependencyException;
 
 import java.util.Map;
 
@@ -32,7 +32,7 @@ final class AnalyzerEnv
 
     AnalyzerEnv(@NonNull Class<?> ownerType, @NonNull Node node)
     {
-        this.mProxyProvider = getProxyProvider(ownerType);
+        this.mProxyProvider = ProviderImpl.createProxyProvider(ownerType);
         mark(node);
     }
 
@@ -106,13 +106,13 @@ final class AnalyzerEnv
         {
             return name;
         }
-        throw fromMessageThrow(String.format("Attr %s no found", name));
+        throw fromMessageThrow(String.format("Attr %s no found", attr));
     }
 
     @NonNull
     RuntimeException fromMessageThrow(@NonNull String massage)
     {
-        return new AnalysisException(String.format(
+        return new GenerateDependencyException(String.format(
                 "Error in %s ", mCurrent.asXML())
                 + (TextUtils.isEmpty(massage)
                 ? ""
@@ -123,37 +123,8 @@ final class AnalyzerEnv
     RuntimeException
     formExceptionThrow(@NonNull Throwable e)
     {
-        return new AnalysisException(
+        return new GenerateDependencyException(
                 String.format("Error in %s\n ",
                         mCurrent.asXML()), e);
-    }
-
-    private static Provider getProxyProvider(final Class<?> ownerType)
-    {
-        return new Provider()
-        {
-            @NonNull
-            @Override
-            public <T> T provide(@NonNull DependencyManager dependencyManager)
-            {
-                throw new IllegalStateException(
-                        "Objects cannot be generated " +
-                                "read proxy providers");
-            }
-
-            @NonNull
-            @Override
-            public DependencyType getType()
-            {
-                return DependencyType.SINGLETON;
-            }
-
-            @NonNull
-            @Override
-            public Class<?> getResultType()
-            {
-                return ownerType;
-            }
-        };
     }
 }

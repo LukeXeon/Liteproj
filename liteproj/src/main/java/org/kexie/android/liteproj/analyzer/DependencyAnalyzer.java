@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
+import android.support.annotation.RestrictTo;
 import android.support.v4.util.ArrayMap;
 import android.support.v4.util.LruCache;
 import android.text.TextUtils;
@@ -18,6 +19,7 @@ import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.kexie.android.liteproj.DependencyType;
+import org.kexie.android.liteproj.GenerateDependencyException;
 import org.kexie.android.liteproj.R;
 import org.kexie.android.liteproj.util.TextType;
 import org.kexie.android.liteproj.util.TextUtil;
@@ -32,6 +34,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public final class DependencyAnalyzer
         extends ContextWrapper
 {
@@ -45,19 +48,17 @@ public final class DependencyAnalyzer
 
     private static final List<TextConverter> sTextConverters = newTextConverters();
 
-    private final SAXReader mSAXReader = new SAXReader();
-
     private final LruCache<Object, Dependency> mResultCache;
 
     @NonNull
-    private Document readXml(@NonNull InputStream stream,
-                             boolean isCompressed)
+    private static Document readXml(@NonNull InputStream stream,
+                                    boolean isCompressed)
     {
         if (!isCompressed)
         {
             try
             {
-                return mSAXReader.read(stream);
+                return new SAXReader().read(stream);
             } catch (DocumentException e)
             {
                 throw new RuntimeException(e);
@@ -152,10 +153,9 @@ public final class DependencyAnalyzer
             {
                 try
                 {
-                    return valueOf.valueOf(value);
+                    return valueOf.valueOf(val);
                 } catch (NumberFormatException ignored)
                 {
-
                 }
             }
             throw new NumberFormatException(
@@ -218,8 +218,8 @@ public final class DependencyAnalyzer
                 break;
                 default:
                 {
-                    throw new IllegalStateException("Files can be in the 'raw' directory " +
-                            "or the 'xml' directory");
+                    throw new IllegalStateException("Files can be in the 'raw' directory "
+                            + "or the 'xml' directory");
                 }
             }
             mResultCache.put(xml, dependency);
@@ -275,7 +275,7 @@ public final class DependencyAnalyzer
         String let = env.getAttrNoThrow(element, getString(R.string.val_string));
         if (let != null)
         {
-            return analysisLetAssignToVar(env, element);
+            return analysisAssignValToVar(env, element);
         } else
         {
             return analysisProviderVar(env, element);
@@ -315,9 +315,10 @@ public final class DependencyAnalyzer
                 }
             }
         }
-        return new DependencyProvider(isSingleton(env, element)
-                ? DependencyType.SINGLETON
-                : DependencyType.FACTORY,
+        return ProviderImpl.createProvider(
+                isSingleton(env, element)
+                        ? DependencyType.SINGLETON
+                        : DependencyType.FACTORY,
                 factory,
                 setters);
     }
@@ -351,7 +352,7 @@ public final class DependencyAnalyzer
         String name = env.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         String refOrVal = getRefOrValAttr(env, element);
-        return DependencyProvider.newSetter(
+        return ProviderImpl.createFieldSetter(
                 TypeUtil.getTypeField(path,
                         name,
                         env.getResultTypeIfNullThrow(refOrVal)),
@@ -378,7 +379,7 @@ public final class DependencyAnalyzer
                 return analysisBuilder(env, item, type);
             }
         }
-        return DependencyProvider.newNew(
+        return ProviderImpl.createConstructorFactory(
                 TypeUtil.getTypeConstructor(type, null),
                 Collections.<String>emptyList());
     }
@@ -402,8 +403,7 @@ public final class DependencyAnalyzer
                     if (!refOrVal.contains(temp))
                     {
                         refOrVal.add(temp);
-                    }
-                    else
+                    } else
                     {
                         throw env.fromMessageThrow(
                                 String.format("The name '%s' already exist", temp)
@@ -420,7 +420,7 @@ public final class DependencyAnalyzer
         {
             classes[i] = env.getResultTypeIfNullThrow(refOrVal.get(i));
         }
-        return DependencyProvider.newNew(
+        return ProviderImpl.createConstructorFactory(
                 TypeUtil.getTypeConstructor(type,
                         classes)
                 , refOrVal);
@@ -433,7 +433,7 @@ public final class DependencyAnalyzer
         env.mark(element);
         Class<?> factoryType = getTypeAttrIfErrorThrow(env, element);
         String factoryName = env.getAttrIfEmptyThrow(element,
-                getString(R.string.name_string));
+                getString(R.string.action_string));
         List<Element> elements = element.elements();
         List<String> refOrVal = new LinkedList<>();
         if (listNoEmpty(elements))
@@ -470,7 +470,7 @@ public final class DependencyAnalyzer
                 classes);
         if (TypeUtil.isAssignToType(factoryMethod.getReturnType(), type))
         {
-            return DependencyProvider.newFactory(factoryMethod,
+            return ProviderImpl.createMethodFactory(factoryMethod,
                     refOrVal);
         } else
         {
@@ -485,6 +485,7 @@ public final class DependencyAnalyzer
                                              Element element,
                                              Class<?> type)
     {
+        env.mark(element);
         Class<?> builderType = getTypeAttrIfErrorThrow(env, element);
         List<Element> elements = element.elements();
         Map<String, String> refOrVal = new ArrayMap<>();
@@ -496,7 +497,7 @@ public final class DependencyAnalyzer
                 String name = item.getName();
                 if (getString(R.string.arg_string).equals(name))
                 {
-                    String argName = env.getAttrIfEmptyThrow(element,
+                    String argName = env.getAttrIfEmptyThrow(item,
                             getString(R.string.name_string));
                     if (!refOrVal.containsKey(argName))
                     {
@@ -514,8 +515,10 @@ public final class DependencyAnalyzer
             }
         }
         Map<Method, String> setters = new ArrayMap<>();
+        String buildAction = env.getAttrNoThrow(element,
+                getString(R.string.action_string));
         Method buildMethod = TypeUtil.getTypeInstanceMethod(builderType,
-                "build",
+                buildAction == null ? "build" : buildAction,
                 null);
         if (!TypeUtil.isAssignToType(buildMethod.getReturnType(), type))
         {
@@ -532,7 +535,7 @@ public final class DependencyAnalyzer
                     new Class<?>[]{env.getResultTypeIfNullThrow(entry.getValue())}),
                     entry.getValue());
         }
-        return DependencyProvider.newBuilder(builderType,
+        return ProviderImpl.createBuilderFactory(builderType,
                 setters,
                 buildMethod);
     }
@@ -545,7 +548,7 @@ public final class DependencyAnalyzer
         String name = env.getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         String refOrVal = getRefOrValAttr(env, element);
-        return DependencyProvider.newSetter(
+        return ProviderImpl.createPropertySetter(
                 TypeUtil.getTypeProperty(
                         path,
                         name,
@@ -558,7 +561,7 @@ public final class DependencyAnalyzer
         env.mark(element);
         String ref = env.getAttrNoThrow(element,
                 getString(R.string.ref_string));
-        String let = env.getAttrNoThrow(element,
+        String val = env.getAttrNoThrow(element,
                 getString(R.string.val_string));
         if (ref != null)
         {
@@ -567,47 +570,47 @@ public final class DependencyAnalyzer
             {
                 return ref;
             }
-        } else if (let != null)
+        } else if (val != null)
         {
-            Provider provider = env.getProvider(let);
+            Provider provider = env.getProvider(val);
             if (provider == null)
             {
-                provider = new DependencyProvider(
+                provider = ProviderImpl.createProvider(
                         DependencyType.SINGLETON,
-                        DependencyProvider.newSingleton(
-                                getVal(let)),
+                        ProviderImpl.createSingletonFactory(
+                                getVal(val)),
                         Collections.<Provider.Setter>emptyList());
-                env.addProvider(let, provider);
+                env.addProvider(val, provider);
             }
-            return let;
+            return val;
         }
         throw env.fromMessageThrow(String.format(
                 "Illegal %s = %s",
-                !TextUtils.isEmpty(ref) ? "ref" : "let",
-                !TextUtils.isEmpty(ref) ? ref : let));
+                !TextUtils.isEmpty(ref) ? "ref" : "val",
+                !TextUtils.isEmpty(ref) ? ref : val));
     }
 
-    private Provider analysisLetAssignToVar(AnalyzerEnv env, Element element)
+    private Provider analysisAssignValToVar(AnalyzerEnv env, Element element)
     {
         env.mark(element);
-        String let = env.getAttrIfEmptyThrow(element,
+        String val = env.getAttrIfEmptyThrow(element,
                 getString(R.string.val_string));
-        if (TextType.CONSTANT.equals(TextUtil.getTextType(let)))
+        if (TextType.CONSTANT.equals(TextUtil.getTextType(val)))
         {
-            Provider provider = env.getProvider(let);
+            Provider provider = env.getProvider(val);
             if (provider == null)
             {
-                provider = new DependencyProvider(
+                provider = ProviderImpl.createProvider(
                         DependencyType.SINGLETON,
-                        DependencyProvider.newSingleton(
-                                getVal(let)),
+                        ProviderImpl.createSingletonFactory(
+                                getVal(val)),
                         Collections.<Provider.Setter>emptyList());
-                env.addProvider(let, provider);
+                env.addProvider(val, provider);
             }
             return provider;
         } else
         {
-            throw env.fromMessageThrow(String.format("Incorrect name '%s'", let));
+            throw env.fromMessageThrow(String.format("Incorrect name '%s'", val));
         }
     }
 
@@ -623,18 +626,19 @@ public final class DependencyAnalyzer
                     return Class.forName(attribute.getValue());
                 } catch (ClassNotFoundException e)
                 {
-                    throw new AnalysisException(e);
+                    throw new GenerateDependencyException(e);
                 }
             }
 
         }
-        throw new AnalysisException("XML file format error in " + root.asXML());
+        throw new GenerateDependencyException("XML file format error in " + root.asXML());
     }
 
     private Class<?> getTypeAttrIfErrorThrow(AnalyzerEnv env, Element element)
     {
         try
         {
+            env.mark(element);
             return Class.forName(env.getAttrIfEmptyThrow(
                     element,
                     getString(R.string.type_string)

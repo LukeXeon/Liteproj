@@ -194,7 +194,6 @@ public final class DependencyManager
                             singleton = provider.provide(manager);
                             mSingletons.put(name, singleton);
                         }
-                        Log.i(TAG, String.format("get %s singleton form %s", singleton, this));
                         return (T) singleton;
                     }
                     else//否则甩锅

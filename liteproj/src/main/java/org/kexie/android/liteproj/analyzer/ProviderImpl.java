@@ -14,15 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-final class DependencyProvider implements Provider
+final class ProviderImpl 
+        implements Provider
 {
     private final DependencyType mType;
     private final Factory mFactory;
     private final List<Setter> mSetters;
 
-    DependencyProvider(@NonNull DependencyType type,
-                       @NonNull Factory factory,
-                       @NonNull List<Setter> setters)
+    private ProviderImpl(@NonNull DependencyType type,
+                         @NonNull Factory factory,
+                         @NonNull List<Setter> setters)
     {
         this.mType = type;
         this.mFactory = factory;
@@ -30,7 +31,45 @@ final class DependencyProvider implements Provider
     }
 
     @NonNull
-    static Setter newSetter(@NonNull final Method method, @NonNull final String name)
+    static Provider createProxyProvider(final Class<?> ownerType)
+    {
+        return new Provider()
+        {
+            @NonNull
+            @Override
+            public <T> T provide(@NonNull DependencyManager dependencyManager)
+            {
+                throw new IllegalStateException(
+                        "Objects cannot be generated " +
+                                "read proxy providers");
+            }
+
+            @NonNull
+            @Override
+            public DependencyType getType()
+            {
+                return DependencyType.SINGLETON;
+            }
+
+            @NonNull
+            @Override
+            public Class<?> getResultType()
+            {
+                return ownerType;
+            }
+        };
+    }
+
+    static Provider createProvider(@NonNull DependencyType type,
+                                   @NonNull Factory factory,
+                                   @NonNull List<Setter> setters)
+    {
+        return new ProviderImpl(type, factory, setters);
+    }
+
+    @NonNull
+    static Setter createPropertySetter(@NonNull final Method method,
+                                       @NonNull final String name)
     {
         return new Setter()
         {
@@ -51,7 +90,8 @@ final class DependencyProvider implements Provider
     }
 
     @NonNull
-    static Setter newSetter(@NonNull final Field field, @NonNull final String name)
+    static Setter createFieldSetter(@NonNull final Field field,
+                                    @NonNull final String name)
     {
         return new Setter()
         {
@@ -73,8 +113,8 @@ final class DependencyProvider implements Provider
 
     @NonNull
     @SuppressWarnings("unchecked")
-    static Factory newFactory(@NonNull final Method method,
-                              @NonNull final List<String> references)
+    static Factory createMethodFactory(@NonNull final Method method,
+                                       @NonNull final List<String> references)
     {
         return new Factory()
         {
@@ -107,9 +147,9 @@ final class DependencyProvider implements Provider
         };
     }
 
-    static Factory newBuilder(@NonNull final Class<?> builderType,
-                              @NonNull final Map<Method, String> references,
-                              @NonNull final Method build)
+    static Factory createBuilderFactory(@NonNull final Class<?> builderType,
+                                        @NonNull final Map<Method, String> references,
+                                        @NonNull final Method build)
     {
         return new Factory()
         {
@@ -148,8 +188,8 @@ final class DependencyProvider implements Provider
     }
 
     @NonNull
-    static Factory newNew(@NonNull final Constructor<?> constructor,
-                          @NonNull final List<String> references)
+    static Factory createConstructorFactory(@NonNull final Constructor<?> constructor,
+                                            @NonNull final List<String> references)
     {
         return new Factory()
         {
@@ -201,7 +241,7 @@ final class DependencyProvider implements Provider
     }
 
     @SuppressWarnings("unchecked")
-    static Factory newSingleton(Object object)
+    static Factory createSingletonFactory(Object object)
     {
         final Object nonNull = Objects.requireNonNull(object);
         return new Factory()

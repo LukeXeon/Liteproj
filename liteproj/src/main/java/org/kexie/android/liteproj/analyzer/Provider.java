@@ -1,10 +1,12 @@
 package org.kexie.android.liteproj.analyzer;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.RestrictTo;
 
 import org.kexie.android.liteproj.DependencyManager;
 import org.kexie.android.liteproj.DependencyType;
 
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public interface Provider
 {
     @NonNull

@@ -12,4 +12,10 @@ public class Bean
     {
         this.object = object;
     }
+
+    @Override
+    public String toString()
+    {
+        return super.toString() + "\n" + field + "\n" + object + "\n" + string;
+    }
 }

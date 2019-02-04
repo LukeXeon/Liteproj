@@ -15,4 +15,5 @@
     <string name="dependency_string">dependency</string>
     <string name="val_string">val</string>
     <string name="builder_string">builder</string>
+    <string name="action_string">action</string>
 </resources>
