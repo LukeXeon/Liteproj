@@ -9,6 +9,7 @@ import org.kexie.android.liteproj.LiteViewModel;
 import org.kexie.android.liteproj.Reference;
 import org.kexie.android.liteproj.Using;
 
+@Using(R.xml.all_test)
 public class ViewModelTest extends LiteViewModel
 {
     @Reference("holder")

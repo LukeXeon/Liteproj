@@ -47,24 +47,24 @@ final class AXmlReader
     }
 
     @Override
-    public void startPrefixMapping(String prefix,
-                                   String uri)
+    public void startPrefixMapping(@NonNull String prefix,
+                                   @NonNull String uri)
     {
 
     }
 
     @Override
-    public void endPrefixMapping(String prefix,
-                                 String uri)
+    public void endPrefixMapping(@NonNull String prefix,
+                                 @NonNull String uri)
     {
 
     }
 
     @Override
-    public void startElement(String uri,
-                             String localName,
-                             String qName,
-                             Attribute[] attributes)
+    public void startElement(@NonNull String uri,
+                             @NonNull String localName,
+                             @NonNull String qName,
+                             @NonNull Attribute[] attributes)
     {
         Element element = TextUtils.isEmpty(uri)
                 ? mStack.get(mStack.size() - 1).addElement(localName)
@@ -87,15 +87,15 @@ final class AXmlReader
     }
 
     @Override
-    public void endElement(String uri,
-                           String localName,
-                           String qName)
+    public void endElement(@NonNull String uri,
+                           @NonNull String localName,
+                           @NonNull String qName)
     {
         mStack.remove(mStack.size() - 1);
     }
 
     @Override
-    public void characterData(String data)
+    public void characterData(@NonNull String data)
     {
         Branch branch = mStack.get(mStack.size() - 1);
         if (branch instanceof Element)
@@ -105,14 +105,14 @@ final class AXmlReader
     }
 
     @Override
-    public void processingInstruction(String target,
-                                      String data)
+    public void processingInstruction(@NonNull String target,
+                                      @NonNull String data)
     {
 
     }
 
     @Override
-    public void text(String data)
+    public void text(@NonNull String data)
     {
         Branch branch = mStack.get(mStack.size() - 1);
         if (branch instanceof Element)

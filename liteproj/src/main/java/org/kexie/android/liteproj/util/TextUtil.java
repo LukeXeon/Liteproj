@@ -24,8 +24,9 @@ public final class TextUtil
             return TextType.ILLEGAL;
         } else
         {
-            if ((text.charAt(0) == '@')
-                    && !TextUtils.isEmpty(text.substring(1, text.length())))
+            if (text.charAt(0) == '@'
+                    && text.length() > 1
+                    && !TextUtils.isEmpty(text.substring(1)))
             {
                 return TextType.CONSTANT;
             } else if (sNamePattern

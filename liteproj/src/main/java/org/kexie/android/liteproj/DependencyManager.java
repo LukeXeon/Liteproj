@@ -196,10 +196,6 @@ public final class DependencyManager
                             return manager.get(name);
                         }
                     }
-                    case CONSTANT:
-                    {
-                        return provider.provide(this);//传参无意义
-                    }
                     case FACTORY:
                     {
                         DependencyManager manager = mManagers.get(dependency);
@@ -240,11 +236,7 @@ public final class DependencyManager
     @SuppressWarnings({"WeakerAccess"})
     public DependencyType getDependencyType(String name)
     {
-        if (NULL.equals(name))
-        {
-            return DependencyType.CONSTANT;
-        }
-        if (OWNER.equals(name))
+        if (NULL.equals(name) || OWNER.equals(name))
         {
             return DependencyType.SINGLETON;
         }

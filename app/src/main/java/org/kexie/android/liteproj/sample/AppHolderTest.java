@@ -10,4 +10,10 @@ public class AppHolderTest
     {
         this.context = context;
     }
+
+    @Override
+    public String toString()
+    {
+        return super.toString() + context;
+    }
 }

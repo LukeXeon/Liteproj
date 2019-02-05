@@ -5,8 +5,8 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 import android.support.v4.util.ArraySet;
 
-
-import org.kexie.android.liteproj.DependencyType;
+import org.kexie.android.liteproj.util.TextType;
+import org.kexie.android.liteproj.util.TextUtil;
 
 import java.util.Map;
 import java.util.Set;
@@ -29,11 +29,11 @@ public final class Dependency
     public Set<String> getReferences()
     {
         Set<String> result = new ArraySet<>();
-        for (Map.Entry<String, Provider> entry : mProviders.entrySet())
+        for (String key : mProviders.keySet())
         {
-            if (!DependencyType.CONSTANT.equals(entry.getValue().getType()))
+            if (!TextType.CONSTANT.equals(TextUtil.getTextType(key)))
             {
-                result.add(entry.getKey());
+                result.add(key);
             }
         }
         return result;

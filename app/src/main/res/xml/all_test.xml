@@ -31,7 +31,8 @@
     </var>
     <var
         name="holder"
-        type="org.kexie.android.liteproj.sample.AppHolderTest">
+        type="org.kexie.android.liteproj.sample.AppHolderTest"
+        provider="singleton">
         <new>
             <arg ref="owner"/>
         </new>

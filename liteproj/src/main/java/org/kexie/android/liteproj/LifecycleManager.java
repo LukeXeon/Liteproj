@@ -11,8 +11,8 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.util.ArraySet;
 import android.util.Log;
 
-import org.kexie.android.liteproj.internal.Dependency;
 import org.kexie.android.liteproj.internal.DependencyAnalyzer;
+import org.kexie.android.liteproj.internal.Dependency;
 import org.kexie.android.liteproj.util.TextType;
 import org.kexie.android.liteproj.util.TextUtil;
 import org.kexie.android.liteproj.util.TypeUtil;
@@ -38,11 +38,14 @@ final class LifecycleManager
         throw new AssertionError();
     }
 
-    private static DependencyAnalyzer sAnalyzer;
+    private static final String TAG = "LifecycleManager";
+
+    private static DependencyAnalyzer sDependencyAnalyzer;
+
+    private static final Executor sAnalysisTaskExecutor
+            = Executors.newCachedThreadPool();
 
     private static Class<?> sApplicationType;
-
-    private static final String TAG = "LifecycleManager";
 
     private final static FragmentManager.FragmentLifecycleCallbacks
             sFragmentCallbacks = new FragmentManager.FragmentLifecycleCallbacks()
@@ -82,9 +85,6 @@ final class LifecycleManager
 
     private static final AtomicBoolean sInitialized
             = new AtomicBoolean(false);
-
-    private static final Executor sTaskExecutor
-            = Executors.newCachedThreadPool();
 
     private static void inject(@NonNull Object object,
                                @NonNull DependencyManager dependency)
@@ -173,7 +173,9 @@ final class LifecycleManager
     {
         if (dependencies.size() == 0)
         {
-            throw new IllegalStateException("@Using not reference resource");
+            throw new IllegalStateException(String.format(
+                    "%s @Using not reference resource",
+                    ownerType));
         }
         Set<String> set = new ArraySet<>();
         Set<String> result = new ArraySet<>();
@@ -182,13 +184,14 @@ final class LifecycleManager
             Set<String> newSet = dependency.getReferences();
             result.addAll(set);
             result.retainAll(newSet);
-            if (result.size() == 0)
+            if (result.isEmpty())
             {
                 set.addAll(newSet);
             } else
             {
                 throw new RuntimeException(String.format(
-                        "Dependency conflicts occur during Mergers set = %s",
+                        "Name conflicts occur when merging dependencies," +
+                                " and the set of conflicts is %s",
                         result.toString()));
             }
             Class<?> dOwnerType = dependency.getOwnerType();
@@ -221,7 +224,7 @@ final class LifecycleManager
             return;
         }
         Application application = (Application) context.getApplicationContext();
-        sAnalyzer = new DependencyAnalyzer(application);
+        sDependencyAnalyzer = new DependencyAnalyzer(application);
         sApplicationType = application.getClass();
         application.registerActivityLifecycleCallbacks(sActivityCallbacks);
         attachTo(application);
@@ -263,10 +266,10 @@ final class LifecycleManager
                                         @Override
                                         public Dependency call()
                                         {
-                                            return sAnalyzer.analysis(resId);
+                                            return sDependencyAnalyzer.analysis(resId);
                                         }
                                     });
-                            sTaskExecutor.execute(task);
+                            sAnalysisTaskExecutor.execute(task);
                             analysisTasks.add(task);
                         }
                     }
@@ -282,10 +285,10 @@ final class LifecycleManager
                                     @Override
                                     public Dependency call()
                                     {
-                                        return sAnalyzer.analysis(asset);
+                                        return sDependencyAnalyzer.analysis(asset);
                                     }
                                 });
-                        sTaskExecutor.execute(task);
+                        sAnalysisTaskExecutor.execute(task);
                         analysisTasks.add(task);
                     }
                 }

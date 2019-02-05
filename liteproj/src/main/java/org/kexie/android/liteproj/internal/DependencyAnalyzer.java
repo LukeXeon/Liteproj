@@ -38,6 +38,7 @@ import java.util.Map;
 public final class DependencyAnalyzer
         extends ContextWrapper
 {
+
     private interface TextConverter
     {
         @NonNull
@@ -57,7 +58,7 @@ public final class DependencyAnalyzer
 
         private Context(@NonNull Class<?> ownerType)
         {
-            this.mProxyProvider = Provider.createOwnerTypeProxy(ownerType);
+            this.mProxyProvider = Provider.createOwnerProxyProvider(ownerType);
         }
 
         @Nullable
@@ -69,7 +70,7 @@ public final class DependencyAnalyzer
             }
             if (DependencyManager.NULL.equals(name))
             {
-                return Provider.sNullProxy;
+                return Provider.sNullProxyProvider;
             }
             return mProviders.get(name);
         }
@@ -469,8 +470,7 @@ public final class DependencyAnalyzer
         }
         return Provider.createConstructorFactory(
                 TypeUtil.getTypeConstructor(type,
-                        classes)
-                , refOrVal);
+                        classes), refOrVal);
     }
 
     @NonNull
@@ -623,7 +623,7 @@ public final class DependencyAnalyzer
             Provider provider = env.getProvider(val);
             if (provider == null)
             {
-                provider = Provider.createSingleton(getVal(val));
+                provider = Provider.createConstantProvider(getVal(val));
                 env.addProvider(val, provider);
             }
             return val;
@@ -642,13 +642,13 @@ public final class DependencyAnalyzer
                 getString(R.string.val_string));
         if (TextType.CONSTANT.equals(TextUtil.getTextType(val)))
         {
-            Provider provider = env.getProvider(val);
-            if (provider == null)
+            Provider constant = env.getProvider(val);
+            if (constant == null)
             {
-                provider = Provider.createSingleton(getVal(val));
-                env.addProvider(val, provider);
+                constant = Provider.createConstantProvider(getVal(val));
+                env.addProvider(val, constant);
             }
-            return provider;
+            return constant;
         } else
         {
             throw fromMessageThrow(element, String.format("Incorrect name '%s'", val));

@@ -18,7 +18,7 @@ import java.util.Objects;
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public abstract class Provider
 {
-    static final Provider sNullProxy = new Provider()
+    static final Provider sNullProxyProvider = new Provider()
     {
         @NonNull
         @Override
@@ -33,7 +33,7 @@ public abstract class Provider
         @Override
         public DependencyType getType()
         {
-            return DependencyType.CONSTANT;
+            return DependencyType.SINGLETON;
         }
 
         @NonNull
@@ -45,7 +45,7 @@ public abstract class Provider
     };
 
     @NonNull
-    static Provider createOwnerTypeProxy(final Class<?> ownerType)
+    static Provider createOwnerProxyProvider(final Class<?> ownerType)
     {
         return new Provider()
         {
@@ -110,7 +110,7 @@ public abstract class Provider
         };
     }
 
-    static Provider createSingleton(Object object)
+    static Provider createConstantProvider(Object object)
     {
         final Object nonNull = Objects.requireNonNull(object);
         return new Provider()
@@ -127,7 +127,7 @@ public abstract class Provider
             @Override
             public DependencyType getType()
             {
-                return DependencyType.CONSTANT;
+                return DependencyType.SINGLETON;
             }
 
             @NonNull
