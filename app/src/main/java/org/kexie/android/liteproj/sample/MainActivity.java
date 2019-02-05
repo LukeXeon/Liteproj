@@ -12,7 +12,7 @@ import org.kexie.android.liteproj.Using;
 import okhttp3.Request;
 
 
-@Using({R.xml.all_test,R.xml.test2})
+@Using({R.xml.all_test,R.xml.test2,R.xml.test2,})
 public class MainActivity extends AppCompatActivity
 {
     private static final String TAG = "MainActivity";
