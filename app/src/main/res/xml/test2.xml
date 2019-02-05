@@ -1,0 +1,4 @@
+<dependency owner="org.kexie.android.liteproj.sample.MainActivity">
+    <var name="url2" val="@http://www.hao123.com"/>
+    <var name="url3" val="@http://www.kexie.com"/>
+</dependency>

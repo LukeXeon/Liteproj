@@ -20,9 +20,18 @@ import org.kexie.android.liteproj.util.TypeUtil;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 final class LifecycleManager
 {
@@ -34,6 +43,8 @@ final class LifecycleManager
     private static DependencyAnalyzer sAnalyzer;
 
     private static Class<?> sApplicationType;
+
+    private static final String TAG = "LifecycleManager";
 
     private final static FragmentManager.FragmentLifecycleCallbacks
             sFragmentCallbacks = new FragmentManager.FragmentLifecycleCallbacks()
@@ -71,7 +82,11 @@ final class LifecycleManager
         }
     };
 
-    private static final String TAG = "LifecycleManager";
+    private static final AtomicBoolean sInitialized
+            = new AtomicBoolean(false);
+
+    private static final Executor sTaskExecutor
+            = Executors.newCachedThreadPool();
 
     private static void inject(@NonNull Object object,
                                @NonNull DependencyManager dependency)
@@ -166,7 +181,7 @@ final class LifecycleManager
         Set<String> result = new ArraySet<>();
         for (Dependency dependency : dependencies)
         {
-            Set<String> newSet = dependency.getNames();
+            Set<String> newSet = dependency.getReferences();
             result.addAll(set);
             result.retainAll(newSet);
             if (result.size() == 0)
@@ -201,16 +216,17 @@ final class LifecycleManager
         }
     }
 
-    static synchronized void init(@NonNull Context context)
+    static void init(@NonNull Context context)
     {
-        if (sAnalyzer == null)
+        if (sInitialized.getAndSet(true))
         {
-            Application application = (Application) context.getApplicationContext();
-            sAnalyzer = new DependencyAnalyzer(application);
-            sApplicationType = application.getClass();
-            application.registerActivityLifecycleCallbacks(sActivityCallbacks);
-            attachTo(application);
+            return;
         }
+        Application application = (Application) context.getApplicationContext();
+        sAnalyzer = new DependencyAnalyzer(application);
+        sApplicationType = application.getClass();
+        application.registerActivityLifecycleCallbacks(sActivityCallbacks);
+        attachTo(application);
     }
 
     static void attachTo(@NonNull Object owner)
@@ -222,24 +238,68 @@ final class LifecycleManager
                 ((FragmentActivity) owner).getSupportFragmentManager()
                         .registerFragmentLifecycleCallbacks(sFragmentCallbacks,
                                 true);
+            } else if (owner instanceof Activity)
+            {
+                Log.w(TAG, String.format(
+                        "Using this %s type will cause fragments below to fail" +
+                                " to receive injection events," +
+                                " so you'd better use FragmentActivity",
+                        owner.getClass()));
             }
             DependencyManager manager = null;
             Using using = owner.getClass().getAnnotation(Using.class);
             if (using != null)
             {
-                List<Dependency> dependencies = new LinkedList<>();
+                List<FutureTask<Dependency>> analysisTasks = new LinkedList<>();
                 if (using.value().length != 0)
                 {
-                    for (int resId : using.value())
+                    Set<Integer> idSet = new ArraySet<>(using.value().length);
+                    for (final int resId : using.value())
                     {
-                        dependencies.add(sAnalyzer.analysis(resId));
+                        if (!idSet.contains(resId))
+                        {
+                            idSet.add(resId);
+                            FutureTask<Dependency> task = new FutureTask<>(
+                                    new Callable<Dependency>()
+                                    {
+                                        @Override
+                                        public Dependency call()
+                                        {
+                                            return sAnalyzer.analysis(resId);
+                                        }
+                                    });
+                            sTaskExecutor.execute(task);
+                            analysisTasks.add(task);
+                        }
                     }
                 }
                 if (using.assets().length != 0)
                 {
-                    for (String asset : using.assets())
+                    for (final String asset
+                            : new ArraySet<>(Arrays.asList(using.assets())))
                     {
-                        dependencies.add(sAnalyzer.analysis(asset));
+                        FutureTask<Dependency> task = new FutureTask<>(
+                                new Callable<Dependency>()
+                                {
+                                    @Override
+                                    public Dependency call()
+                                    {
+                                        return sAnalyzer.analysis(asset);
+                                    }
+                                });
+                        sTaskExecutor.execute(task);
+                        analysisTasks.add(task);
+                    }
+                }
+                List<Dependency> dependencies = new LinkedList<>();
+                for (FutureTask<Dependency> task : analysisTasks)
+                {
+                    try
+                    {
+                        dependencies.add(task.get());
+                    } catch (InterruptedException | ExecutionException e)
+                    {
+                        throw new RuntimeException(e);
                     }
                 }
                 check(owner.getClass(), dependencies);

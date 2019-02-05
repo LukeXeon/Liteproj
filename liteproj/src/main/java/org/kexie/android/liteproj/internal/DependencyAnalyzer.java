@@ -95,6 +95,7 @@ public final class DependencyAnalyzer
     private static final List<TextConverter>
             sTextConverters = newTextConverters();
 
+    //线程安全
     private final LruCache<Object, Dependency> mResultCache;
 
     @NonNull
@@ -622,11 +623,7 @@ public final class DependencyAnalyzer
             Provider provider = env.getProvider(val);
             if (provider == null)
             {
-                provider = Provider.createProvider(
-                        DependencyType.SINGLETON,
-                        Provider.createSingletonFactory(
-                                getVal(val)),
-                        Collections.<Setter>emptyList());
+                provider = Provider.createSingleton(getVal(val));
                 env.addProvider(val, provider);
             }
             return val;
@@ -648,11 +645,7 @@ public final class DependencyAnalyzer
             Provider provider = env.getProvider(val);
             if (provider == null)
             {
-                provider = Provider.createProvider(
-                        DependencyType.SINGLETON,
-                        Provider.createSingletonFactory(
-                                getVal(val)),
-                        Collections.<Setter>emptyList());
+                provider = Provider.createSingleton(getVal(val));
                 env.addProvider(val, provider);
             }
             return provider;

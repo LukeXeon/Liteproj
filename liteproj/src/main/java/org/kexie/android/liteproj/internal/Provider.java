@@ -1,6 +1,7 @@
 package org.kexie.android.liteproj.internal;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.RestrictTo;
 
 import org.kexie.android.liteproj.DependencyManager;
 import org.kexie.android.liteproj.DependencyType;
@@ -14,9 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+@RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public abstract class Provider
 {
-
     static final Provider sNullProxy = new Provider()
     {
         @NonNull
@@ -32,7 +33,7 @@ public abstract class Provider
         @Override
         public DependencyType getType()
         {
-            return DependencyType.SINGLETON;
+            return DependencyType.CONSTANT;
         }
 
         @NonNull
@@ -105,6 +106,35 @@ public abstract class Provider
             public Class<?> getResultType()
             {
                 return factory.getResultType();
+            }
+        };
+    }
+
+    static Provider createSingleton(Object object)
+    {
+        final Object nonNull = Objects.requireNonNull(object);
+        return new Provider()
+        {
+            @NonNull
+            @SuppressWarnings({"unchecked"})
+            @Override
+            public <T> T provide(@NonNull DependencyManager dependencyManager)
+            {
+                return (T) nonNull;
+            }
+
+            @NonNull
+            @Override
+            public DependencyType getType()
+            {
+                return DependencyType.CONSTANT;
+            }
+
+            @NonNull
+            @Override
+            public Class<?> getResultType()
+            {
+                return nonNull.getClass();
             }
         };
     }
@@ -281,29 +311,6 @@ public abstract class Provider
             args[i] = TypeUtil.castToType(dependency.get(name), targetClasses[i]);
         }
         return args;
-    }
-
-    @NonNull
-    static Factory createSingletonFactory(@NonNull Object object)
-    {
-        final Object nonNull = Objects.requireNonNull(object);
-        return new Factory()
-        {
-            @NonNull
-            @SuppressWarnings("unchecked")
-            @Override
-            public <T> T newInstance(@NonNull DependencyManager dependencyManager)
-            {
-                return (T) nonNull;
-            }
-
-            @NonNull
-            @Override
-            public Class<?> getResultType()
-            {
-                return nonNull.getClass();
-            }
-        };
     }
 
     @NonNull

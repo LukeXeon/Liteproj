@@ -6,6 +6,8 @@ import android.support.annotation.RestrictTo;
 import android.support.v4.util.ArraySet;
 
 
+import org.kexie.android.liteproj.DependencyType;
+
 import java.util.Map;
 import java.util.Set;
 
@@ -24,9 +26,17 @@ public final class Dependency
     }
 
     @NonNull
-    public Set<String> getNames()
+    public Set<String> getReferences()
     {
-        return new ArraySet<>(mProviders.keySet());
+        Set<String> result = new ArraySet<>();
+        for (Map.Entry<String, Provider> entry : mProviders.entrySet())
+        {
+            if (!DependencyType.CONSTANT.equals(entry.getValue().getType()))
+            {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
     }
 
     @NonNull

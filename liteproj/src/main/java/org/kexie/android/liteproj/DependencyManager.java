@@ -177,26 +177,34 @@ public final class DependencyManager
             Provider provider = dependency.getProvider(name);
             if (provider != null)
             {
-                DependencyManager manager = mManagers.get(dependency);
-                if (DependencyType.SINGLETON.equals(provider.getType()))//若为单例,则特殊处理
+                switch (provider.getType())
                 {
-                    if (equals(manager))//若是自己管理的单例则自己要负责提供
+                    case SINGLETON:
                     {
-                        Object singleton = mSingletons.get(name);
-                        if (singleton == null)
+                        DependencyManager manager = mManagers.get(dependency);
+                        if (equals(manager))//若是自己管理的单例则自己要负责提供
                         {
-                            singleton = provider.provide(manager);
-                            mSingletons.put(name, singleton);
+                            Object singleton = mSingletons.get(name);
+                            if (singleton == null)
+                            {
+                                singleton = provider.provide(manager);
+                                mSingletons.put(name, singleton);
+                            }
+                            return (T) singleton;
+                        } else//否则甩锅
+                        {
+                            return manager.get(name);
                         }
-                        return (T) singleton;
-                    } else//否则甩锅
-                    {
-                        return manager.get(name);
                     }
-                } else
-                {
-                    //不是单例直接提供
-                    return provider.provide(manager);
+                    case CONSTANT:
+                    {
+                        return provider.provide(this);//传参无意义
+                    }
+                    case FACTORY:
+                    {
+                        DependencyManager manager = mManagers.get(dependency);
+                        return provider.provide(manager);
+                    }
                 }
             }
         }
@@ -232,7 +240,11 @@ public final class DependencyManager
     @SuppressWarnings({"WeakerAccess"})
     public DependencyType getDependencyType(String name)
     {
-        if (OWNER.equals(name) || NULL.equals(name))
+        if (NULL.equals(name))
+        {
+            return DependencyType.CONSTANT;
+        }
+        if (OWNER.equals(name))
         {
             return DependencyType.SINGLETON;
         }
