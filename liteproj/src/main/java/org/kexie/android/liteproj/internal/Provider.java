@@ -1,4 +1,4 @@
-package org.kexie.android.liteproj.analyzer;
+package org.kexie.android.liteproj.internal;
 
 import android.support.annotation.NonNull;
 
@@ -14,24 +14,37 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-final class ProviderImpl 
-        implements Provider
+public abstract class Provider
 {
-    private final DependencyType mType;
-    private final Factory mFactory;
-    private final List<Setter> mSetters;
 
-    private ProviderImpl(@NonNull DependencyType type,
-                         @NonNull Factory factory,
-                         @NonNull List<Setter> setters)
+    static final Provider sNullProxy = new Provider()
     {
-        this.mType = type;
-        this.mFactory = factory;
-        this.mSetters = setters;
-    }
+        @NonNull
+        @Override
+        public <T> T provide(@NonNull DependencyManager dependencyManager)
+        {
+            throw new IllegalStateException(
+                    "Objects cannot be generated " +
+                            "read proxy providers");
+        }
+
+        @NonNull
+        @Override
+        public DependencyType getType()
+        {
+            return DependencyType.SINGLETON;
+        }
+
+        @NonNull
+        @Override
+        public Class<?> getResultType()
+        {
+            return Void.TYPE;
+        }
+    };
 
     @NonNull
-    static Provider createProxyProvider(final Class<?> ownerType)
+    static Provider createOwnerTypeProxy(final Class<?> ownerType)
     {
         return new Provider()
         {
@@ -61,11 +74,39 @@ final class ProviderImpl
     }
 
     @NonNull
-    static Provider createProvider(@NonNull DependencyType type,
-                                   @NonNull Factory factory,
-                                   @NonNull List<Setter> setters)
+    static Provider createProvider(@NonNull final DependencyType type,
+                                   @NonNull final Factory factory,
+                                   @NonNull final List<Setter> setters)
     {
-        return new ProviderImpl(type, factory, setters);
+        return new Provider()
+        {
+            @NonNull
+            @SuppressWarnings({"unchecked"})
+            @Override
+            public <T> T provide(@NonNull DependencyManager dependencyManager)
+            {
+                Object target = factory.newInstance(dependencyManager);
+                for (Setter setter : setters)
+                {
+                    setter.set(target, dependencyManager);
+                }
+                return (T) target;
+            }
+
+            @NonNull
+            @Override
+            public DependencyType getType()
+            {
+                return type;
+            }
+
+            @NonNull
+            @Override
+            public Class<?> getResultType()
+            {
+                return factory.getResultType();
+            }
+        };
     }
 
     @NonNull
@@ -113,13 +154,13 @@ final class ProviderImpl
     }
 
     @NonNull
-    @SuppressWarnings("unchecked")
     static Factory createMethodFactory(@NonNull final Method method,
                                        @NonNull final List<String> references)
     {
         return new Factory()
         {
             @NonNull
+            @SuppressWarnings("unchecked")
             @Override
             public <T> T newInstance(@NonNull DependencyManager dependency)
             {
@@ -243,13 +284,13 @@ final class ProviderImpl
     }
 
     @NonNull
-    @SuppressWarnings("unchecked")
     static Factory createSingletonFactory(@NonNull Object object)
     {
         final Object nonNull = Objects.requireNonNull(object);
         return new Factory()
         {
             @NonNull
+            @SuppressWarnings("unchecked")
             @Override
             public <T> T newInstance(@NonNull DependencyManager dependencyManager)
             {
@@ -266,29 +307,11 @@ final class ProviderImpl
     }
 
     @NonNull
-    @SuppressWarnings({"unchecked"})
-    @Override
-    public <T> T provide(@NonNull DependencyManager dependencyManager)
-    {
-        Object target = mFactory.newInstance(dependencyManager);
-        for (Setter setter : mSetters)
-        {
-            setter.set(target, dependencyManager);
-        }
-        return (T) target;
-    }
+    public abstract <T> T provide(@NonNull DependencyManager dependencyManager);
 
-    @Override
     @NonNull
-    public DependencyType getType()
-    {
-        return mType;
-    }
+    public abstract DependencyType getType();
 
-    @Override
     @NonNull
-    public Class<?> getResultType()
-    {
-        return mFactory.getResultType();
-    }
+    public abstract Class<?> getResultType();
 }

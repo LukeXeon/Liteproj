@@ -10,6 +10,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 import android.util.Log;
 
+
 /** @hide */
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public final class LiteprojInitializer
@@ -21,10 +22,10 @@ public final class LiteprojInitializer
     @Override
     public boolean onCreate()
     {
-        Log.i(TAG, "liteproj init");
         Context context = getContext();
         assert context != null;
         LifecycleManager.init(context);
+        Log.d(TAG, "Liteproj init");
         return true;
     }
 

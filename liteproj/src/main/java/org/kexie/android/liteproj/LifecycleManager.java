@@ -11,8 +11,8 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.util.ArraySet;
 import android.util.Log;
 
-import org.kexie.android.liteproj.analyzer.Dependency;
-import org.kexie.android.liteproj.analyzer.DependencyAnalyzer;
+import org.kexie.android.liteproj.internal.Dependency;
+import org.kexie.android.liteproj.internal.DependencyAnalyzer;
 import org.kexie.android.liteproj.util.TextType;
 import org.kexie.android.liteproj.util.TextUtil;
 import org.kexie.android.liteproj.util.TypeUtil;
@@ -43,31 +43,31 @@ final class LifecycleManager
                                        @NonNull Fragment f,
                                        @NonNull Context context)
         {
-            onAttach(f);
+            attachTo(f);
         }
 
         @Override
         public void onFragmentDestroyed(@NonNull FragmentManager fm,
                                         @NonNull Fragment f)
         {
-            onDetach(f);
+            detachFrom(f);
         }
     };
 
     private final static Application.ActivityLifecycleCallbacks
-            sActivityCallbacks = new LifecycleHandler()
+            sActivityCallbacks = new ActivityLifecycleCallbacks()
     {
         @Override
         public void onActivityCreated(@NonNull Activity activity,
                                       @NonNull Bundle savedInstanceState)
         {
-            onAttach(activity);
+            attachTo(activity);
         }
 
         @Override
         public void onActivityDestroyed(@NonNull Activity activity)
         {
-            onDetach(activity);
+            detachFrom(activity);
         }
     };
 
@@ -155,6 +155,52 @@ final class LifecycleManager
         }
     }
 
+    private static void check(@NonNull Class<?> ownerType,
+                              @NonNull List<Dependency> dependencies)
+    {
+        if (dependencies.size() == 0)
+        {
+            throw new IllegalStateException("@Using not reference resource");
+        }
+        Set<String> set = new ArraySet<>();
+        Set<String> result = new ArraySet<>();
+        for (Dependency dependency : dependencies)
+        {
+            Set<String> newSet = dependency.getNames();
+            result.addAll(set);
+            result.retainAll(newSet);
+            if (result.size() == 0)
+            {
+                set.addAll(newSet);
+            } else
+            {
+                throw new RuntimeException(String.format(
+                        "Dependency conflicts occur during Mergers set = %s",
+                        result.toString()));
+            }
+            Class<?> dOwnerType = dependency.getOwnerType();
+            if (!dOwnerType.isAssignableFrom(ownerType))
+            {
+                if (!((FragmentActivity.class.isAssignableFrom(ownerType)
+                        || LiteViewModel.class.isAssignableFrom(ownerType)
+                        || LiteService.class.isAssignableFrom(ownerType))
+                        && dOwnerType.isAssignableFrom(sApplicationType)))
+                {
+                    if (!(Fragment.class.isAssignableFrom(ownerType)
+                            && (dOwnerType.isAssignableFrom(sApplicationType)
+                            || FragmentActivity.class.isAssignableFrom(dOwnerType))))
+                    {
+                        throw new RuntimeException(
+                                String.format("Error in @Using resources " +
+                                                "dependency type %s owner type %s",
+                                        dOwnerType,
+                                        ownerType));
+                    }
+                }
+            }
+        }
+    }
+
     static synchronized void init(@NonNull Context context)
     {
         if (sAnalyzer == null)
@@ -163,11 +209,11 @@ final class LifecycleManager
             sAnalyzer = new DependencyAnalyzer(application);
             sApplicationType = application.getClass();
             application.registerActivityLifecycleCallbacks(sActivityCallbacks);
-            onAttach(application);
+            attachTo(application);
         }
     }
 
-    static void onAttach(@NonNull Object owner)
+    static void attachTo(@NonNull Object owner)
     {
         if (!DependencyManager.sTable.containsKey(owner))
         {
@@ -196,13 +242,8 @@ final class LifecycleManager
                         dependencies.add(sAnalyzer.analysis(asset));
                     }
                 }
-                if (check(owner.getClass(), dependencies))
-                {
-                    manager = new DependencyManager(owner, dependencies);
-                } else
-                {
-                    throw new RuntimeException("Error in @Using resources");
-                }
+                check(owner.getClass(), dependencies);
+                manager = new DependencyManager(owner, dependencies);
             }
             DependencyManager.sTable.put(owner, manager);
             if (manager != null)
@@ -212,35 +253,7 @@ final class LifecycleManager
         }
     }
 
-    private static boolean check(@NonNull Class<?> ownerType,
-                                 @NonNull List<Dependency> dependencies)
-    {
-        if (dependencies.size() == 0)
-        {
-            return false;
-        }
-        for (Dependency dependency : dependencies)
-        {
-            Class<?> dOwnerType = dependency.getOwnerType();
-            if (!dOwnerType.isAssignableFrom(ownerType))
-            {
-                if (!(FragmentActivity.class.isAssignableFrom(ownerType)
-                        || LiteViewModel.class.isAssignableFrom(ownerType)
-                        || LiteService.class.isAssignableFrom(ownerType)))
-                {
-                    if (!Fragment.class.isAssignableFrom(ownerType)
-                        && (sApplicationType.equals(dOwnerType)
-                            ||FragmentActivity.class.isAssignableFrom(dOwnerType)))
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    static void onDetach(@NonNull Object owner)
+    static void detachFrom(@NonNull Object owner)
     {
         DependencyManager manager = DependencyManager.sTable.remove(owner);
         if (manager != null)

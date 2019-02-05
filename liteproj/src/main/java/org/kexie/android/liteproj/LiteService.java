@@ -10,7 +10,7 @@ public abstract class LiteService extends Service
     public void onCreate()
     {
         super.onCreate();
-        LifecycleManager.onAttach(this);
+        LifecycleManager.attachTo(this);
     }
 
     @CallSuper
@@ -18,7 +18,7 @@ public abstract class LiteService extends Service
     public void onDestroy()
     {
         super.onDestroy();
-        LifecycleManager.onDetach(this);
+        LifecycleManager.detachFrom(this);
     }
 
 }

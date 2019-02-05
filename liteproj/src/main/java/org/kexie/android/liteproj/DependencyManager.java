@@ -6,11 +6,10 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.util.ArrayMap;
-import android.support.v4.util.ArraySet;
 import android.util.Log;
 
-import org.kexie.android.liteproj.analyzer.Dependency;
-import org.kexie.android.liteproj.analyzer.Provider;
+import org.kexie.android.liteproj.internal.Dependency;
+import org.kexie.android.liteproj.internal.Provider;
 
 import java.lang.ref.WeakReference;
 import java.util.LinkedList;
@@ -18,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Set;
 import java.util.WeakHashMap;
 
 //依赖管理器
@@ -40,6 +38,7 @@ public final class DependencyManager
     private Map<Dependency, DependencyManager> mManagers;
     //用来缓存单例模式的快表
     private Map<String, Object> mSingletons = new ArrayMap<>();
+
     //可以从这里很方便的得到依赖管理器
     @Nullable
     @SuppressWarnings("WeakerAccess")
@@ -47,33 +46,12 @@ public final class DependencyManager
     {
         return sTable.get(owner);
     }
+
     @NonNull
     private Map<Dependency, DependencyManager>
     merge(@NonNull Object owner,
           @NonNull List<Dependency> dependencies)
     {
-        //check
-        if (dependencies.size() > 1)
-        {
-            Set<String> set = dependencies.get(0).getNames();
-            Set<String> result = new ArraySet<>();
-            for (Dependency relation : dependencies
-                    .subList(1, dependencies.size()))
-            {
-                Set<String> newSet = relation.getNames();
-                result.addAll(set);
-                result.retainAll(newSet);
-                if (result.size() == 0)
-                {
-                    set.addAll(newSet);
-                } else
-                {
-                    throw new RuntimeException(String.format(
-                            "Dependency conflicts occur during Mergers set = %s",
-                            result.toString()));
-                }
-            }
-        }
         Map<Dependency, DependencyManager> managers = new ArrayMap<>();
         for (Dependency dependency : dependencies)
         {
@@ -81,45 +59,51 @@ public final class DependencyManager
                     .isAssignableFrom(owner.getClass()))
             {
                 managers.put(dependency, this);
-            } else if (owner instanceof FragmentActivity
-                    || owner instanceof LiteService)
-            {
-                managers.putAll(mergeUpper(
-                        ((ContextWrapper) owner).getApplicationContext(),
-                        dependencies));
-            } else if (owner instanceof Fragment)
-            {
-                managers.putAll(mergeUpper(
-                        Objects.requireNonNull(((Fragment) owner)
-                                .getActivity()),
-                        dependencies));
-            } else if (owner instanceof LiteViewModel)
-            {
-                managers.putAll(mergeUpper(
-                        ((LiteViewModel) owner).getApplication(),
-                        dependencies));
             }
+        }
+        if (owner instanceof FragmentActivity
+                || owner instanceof LiteService)
+        {
+            managers.putAll(mergeUpper(
+                    ((ContextWrapper) owner).getApplicationContext(),
+                    dependencies));
+        } else if (owner instanceof LiteViewModel)
+        {
+            managers.putAll(mergeUpper(
+                    ((LiteViewModel) owner).getApplication(),
+                    dependencies));
+        } else if (owner instanceof Fragment)
+        {
+            managers.putAll(mergeUpper(
+                    Objects.requireNonNull(((Fragment) owner)
+                            .getActivity()),
+                    dependencies));
+        }
+        if (managers.size() == 0)
+        {
+            throw new IllegalStateException("No configuration file matches this type");
         }
         return managers;
     }
+
     @NonNull
     private static Map<Dependency, DependencyManager>
     mergeUpper(@NonNull Object owner,
                @NonNull List<Dependency> dependencies)
     {
-        List<Dependency> owners = new LinkedList<>();
+        List<Dependency> filter = new LinkedList<>();
+        Map<Dependency, DependencyManager> result = new ArrayMap<>();
         for (Dependency dependency : dependencies)
         {
             if (dependency.getOwnerType()
                     .isAssignableFrom(owner.getClass()))
             {
-                owners.add(dependency);
+                filter.add(dependency);
             }
         }
-        Map<Dependency, DependencyManager> result = new ArrayMap<>();
-        DependencyManager manager = sTable.get(owner);
-        if (owners.size() != 0)
+        if (filter.size() != 0)
         {
+            DependencyManager manager = sTable.get(owner);
             if (manager != null)
             {
                 for (Dependency dependency : dependencies)
@@ -128,10 +112,10 @@ public final class DependencyManager
                 }
             } else
             {
-                manager = new DependencyManager(owner, owners);
+                manager = new DependencyManager(owner, filter);
                 sTable.put(owner, manager);
             }
-            for (Dependency dependency : owners)
+            for (Dependency dependency : filter)
             {
                 result.put(dependency, manager);
             }
@@ -156,15 +140,17 @@ public final class DependencyManager
         }
         return result;
     }
+
     //构造函数
     DependencyManager(@NonNull Object owner,
                       @NonNull List<Dependency> dependencies)
     {
-        Log.i(TAG, String.format("%s DependencyManager create for %s", this, owner));
+        Log.i(TAG, String.format("create %s for managed %s", this, owner));
         mOwnerType = owner.getClass();
         mManagers = merge(owner, dependencies);
         mOwner = new WeakReference<>(owner);
     }
+
     //返回持有者，若持有者已经被释放，则报错
     @NonNull
     private Object getOwner()
@@ -172,6 +158,7 @@ public final class DependencyManager
         return Objects.requireNonNull(mOwner.get(),
                 "Owner has been released");
     }
+
     //获取依赖，若此管理器上不存在，则将请求转发到其他管理器
     @Nullable
     @SuppressWarnings({"WeakerAccess", "unchecked"})
@@ -215,6 +202,7 @@ public final class DependencyManager
         }
         throw new NoSuchElementException(String.format("By name %s", name));
     }
+
     //获取依赖类型，但是不进行生成操作
     @NonNull
     @SuppressWarnings({"WeakerAccess"})
@@ -238,6 +226,7 @@ public final class DependencyManager
         }
         throw new NoSuchElementException(String.format("By name %s", name));
     }
+
     //获取依赖的提供器类型,单例或者是工厂模式
     @NonNull
     @SuppressWarnings({"WeakerAccess"})
@@ -257,6 +246,7 @@ public final class DependencyManager
         }
         throw new NoSuchElementException(String.format("By name %s", name));
     }
+
     //在生命周期结束时调用,清理内部状态
     void onDestroy()
     {

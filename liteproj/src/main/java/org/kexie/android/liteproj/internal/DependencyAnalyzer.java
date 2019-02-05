@@ -1,6 +1,5 @@
-package org.kexie.android.liteproj.analyzer;
+package org.kexie.android.liteproj.internal;
 
-import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -18,6 +17,7 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
+import org.kexie.android.liteproj.DependencyManager;
 import org.kexie.android.liteproj.DependencyType;
 import org.kexie.android.liteproj.GenerateDependencyException;
 import org.kexie.android.liteproj.R;
@@ -42,6 +42,52 @@ public final class DependencyAnalyzer
     {
         @NonNull
         Object valueOf(@NonNull String value);
+    }
+
+    private static final class Context
+    {
+        private final Provider mProxyProvider;
+
+        private final Map<String, Provider> mProviders = new ArrayMap<>();
+
+        private Dependency makeResult()
+        {
+            return new Dependency(mProxyProvider.getResultType(), mProviders);
+        }
+
+        private Context(@NonNull Class<?> ownerType)
+        {
+            this.mProxyProvider = Provider.createOwnerTypeProxy(ownerType);
+        }
+
+        @Nullable
+        private Provider getProvider(@NonNull String name)
+        {
+            if (DependencyManager.OWNER.equals(name))
+            {
+                return mProxyProvider;
+            }
+            if (DependencyManager.NULL.equals(name))
+            {
+                return Provider.sNullProxy;
+            }
+            return mProviders.get(name);
+        }
+
+        void addProvider(@NonNull String name, @NonNull Provider provider)
+        {
+            if (!DependencyManager.NULL.equals(name)
+                    && !DependencyManager.OWNER.equals(name)
+                    && !mProviders.containsKey(name))
+            {
+                mProviders.put(name, provider);
+            } else
+            {
+                throw new GenerateDependencyException(
+                        String.format("The provider named %s already exists", name)
+                );
+            }
+        }
     }
 
     private static final String TAG = "DependencyAnalyzer";
@@ -166,7 +212,7 @@ public final class DependencyAnalyzer
         }
     }
 
-    private int getCacheSize()
+    private int initCacheSize()
     {
         try
         {
@@ -181,7 +227,7 @@ public final class DependencyAnalyzer
                     + (packageInfo.services == null
                     || packageInfo.services.length == 0 ? 0
                     : packageInfo.services.length));
-            Log.i(TAG, String.format("cache size = %d", size));
+            Log.d(TAG, String.format("init cache size = %d", size));
             return size;
         } catch (PackageManager.NameNotFoundException e)
         {
@@ -189,10 +235,10 @@ public final class DependencyAnalyzer
         }
     }
 
-    public DependencyAnalyzer(@NonNull Context base)
+    public DependencyAnalyzer(@NonNull android.content.Context base)
     {
         super(base.getApplicationContext());
-        mResultCache = new LruCache<>(getCacheSize());
+        mResultCache = new LruCache<>(initCacheSize());
     }
 
     @NonNull
@@ -252,30 +298,28 @@ public final class DependencyAnalyzer
     private Dependency analysisDocument(@NonNull Document document)
     {
         Element scope = document.getRootElement();
-        AnalyzerEnv env = new AnalyzerEnv(getOwnerType(scope), scope);
+        Context env = new Context(getOwnerType(scope));
         List<Element> elements = scope.elements();
         for (Element element : elements)
         {
-            env.mark(element);
             if (getString(R.string.var_string).equals(element.getName()))
             {
-                env.addProvider(env.getAttrIfEmptyThrow(element,
+                env.addProvider(getAttrIfEmptyThrow(element,
                         getString(R.string.name_string)),
                         analysisVar(env, element));
             } else
             {
-                throw env.fromMessageThrow("Need a 'var' tag");
+                throw fromMessageThrow(element, "Need a 'var' tag");
             }
         }
         return env.makeResult();
     }
 
     @NonNull
-    private Provider analysisVar(@NonNull AnalyzerEnv env,
+    private Provider analysisVar(@NonNull Context env,
                                  @NonNull Element element)
     {
-        env.mark(element);
-        String val = env.getAttrNoThrow(element, getString(R.string.val_string));
+        String val = getAttrNoThrow(element, getString(R.string.val_string));
         if (val != null)
         {
             return analysisAssignValToVar(env, element);
@@ -286,19 +330,17 @@ public final class DependencyAnalyzer
     }
 
     @NonNull
-    private Provider analysisProviderVar(@NonNull AnalyzerEnv env,
+    private Provider analysisProviderVar(@NonNull Context env,
                                          @NonNull Element element)
     {
-        env.mark(element);
-        Class<?> type = getTypeAttrIfErrorThrow(env, element);
+        Class<?> type = getTypeAttrIfErrorThrow(element);
         List<Element> elements = element.elements();
-        List<Provider.Setter> setters = new LinkedList<>();
-        Provider.Factory factory = searchFactory(env, element, type);
+        List<Setter> setters = new LinkedList<>();
+        Factory factory = searchFactory(env, element, type);
         if (listNoEmpty(elements))
         {
             for (Element item : elements)
             {
-                env.mark(item);
                 String name = item.getName();
                 if (getString(R.string.new_string).equals(name)
                         || getString(R.string.factory_string).equals(name)
@@ -314,25 +356,23 @@ public final class DependencyAnalyzer
                     setters.add(analysisProperty(env, item, type));
                 } else
                 {
-                    throw env.fromMessageThrow(
+                    throw fromMessageThrow(element,
                             String.format("Error token %s",
                                     item.getName()));
                 }
             }
         }
-        return ProviderImpl.createProvider(
-                isSingleton(env, element)
+        return Provider.createProvider(
+                isSingleton(element)
                         ? DependencyType.SINGLETON
                         : DependencyType.FACTORY,
                 factory,
                 setters);
     }
 
-    private boolean isSingleton(@NonNull AnalyzerEnv env,
-                                @NonNull Element element)
+    private boolean isSingleton(@NonNull Element element)
     {
-        env.mark(element);
-        String provider = env.getAttrNoThrow(element,
+        String provider = getAttrNoThrow(element,
                 getString(R.string.provider_string));
         if (TextUtils.isEmpty(provider))
         {
@@ -346,38 +386,34 @@ public final class DependencyAnalyzer
             return false;
         } else
         {
-            throw env.fromMessageThrow(String.format(
+            throw fromMessageThrow(element, String.format(
                     "Illegal provider = %s",
                     provider));
         }
     }
 
     @NonNull
-    private Provider.Setter analysisField(@NonNull AnalyzerEnv env,
-                                          @NonNull Element element,
-                                          @NonNull Class<?> path)
+    private Setter analysisField(@NonNull Context env,
+                                 @NonNull Element element,
+                                 @NonNull Class<?> path)
     {
-        env.mark(element);
-        String name = env.getAttrIfEmptyThrow(element,
+        String name = getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         String refOrVal = getRefOrValAttr(env, element);
-        return ProviderImpl.createFieldSetter(
+        return Provider.createFieldSetter(
                 TypeUtil.getTypeField(path,
-                        name,
-                        env.getResultTypeIfNullThrow(refOrVal)),
+                        name, getResultTypeIfNullThrow(env, element, refOrVal)),
                 refOrVal);
     }
 
     @NonNull
-    private Provider.Factory searchFactory(@NonNull AnalyzerEnv env,
-                                           @NonNull Element element,
-                                           @NonNull Class<?> type)
+    private Factory searchFactory(@NonNull Context env,
+                                  @NonNull Element element,
+                                  @NonNull Class<?> type)
     {
-        env.mark(element);
         List<Element> elements = element.elements();
         for (Element item : elements)
         {
-            env.mark(item);
             if (getString(R.string.new_string).equals(item.getName()))
             {
                 return analysisNew(env, item, type);
@@ -389,24 +425,22 @@ public final class DependencyAnalyzer
                 return analysisBuilder(env, item, type);
             }
         }
-        return ProviderImpl.createConstructorFactory(
+        return Provider.createConstructorFactory(
                 TypeUtil.getTypeConstructor(type, null),
                 Collections.<String>emptyList());
     }
 
     @NonNull
-    private Provider.Factory analysisNew(@NonNull AnalyzerEnv env,
-                                         @NonNull Element element,
-                                         @NonNull Class<?> type)
+    private Factory analysisNew(@NonNull Context env,
+                                @NonNull Element element,
+                                @NonNull Class<?> type)
     {
-        env.mark(element);
         List<Element> elements = element.elements();
         List<String> refOrVal = new LinkedList<>();
         if (listNoEmpty(elements))
         {
             for (Element item : elements)
             {
-                env.mark(item);
                 String name = item.getName();
                 if (getString(R.string.arg_string).equals(name))
                 {
@@ -416,35 +450,35 @@ public final class DependencyAnalyzer
                         refOrVal.add(temp);
                     } else
                     {
-                        throw env.fromMessageThrow(
+                        throw fromMessageThrow(item,
                                 String.format("The name '%s' already exist", temp)
                         );
                     }
                 } else
                 {
-                    throw env.fromMessageThrow("Tag 'arg' no found");
+                    throw fromMessageThrow(element,
+                            "Tag 'arg' no found");
                 }
             }
         }
         Class<?>[] classes = new Class<?>[refOrVal.size()];
         for (int i = 0; i < classes.length; i++)
         {
-            classes[i] = env.getResultTypeIfNullThrow(refOrVal.get(i));
+            classes[i] = getResultTypeIfNullThrow(env, element, refOrVal.get(i));
         }
-        return ProviderImpl.createConstructorFactory(
+        return Provider.createConstructorFactory(
                 TypeUtil.getTypeConstructor(type,
                         classes)
                 , refOrVal);
     }
 
     @NonNull
-    private Provider.Factory analysisFactory(@NonNull AnalyzerEnv env,
-                                             @NonNull Element element,
-                                             @NonNull Class<?> type)
+    private Factory analysisFactory(@NonNull Context env,
+                                    @NonNull Element element,
+                                    @NonNull Class<?> type)
     {
-        env.mark(element);
-        Class<?> factoryType = getTypeAttrIfErrorThrow(env, element);
-        String factoryName = env.getAttrIfEmptyThrow(element,
+        Class<?> factoryType = getTypeAttrIfErrorThrow(element);
+        String factoryName = getAttrIfEmptyThrow(element,
                 getString(R.string.action_string));
         List<Element> elements = element.elements();
         List<String> refOrVal = new LinkedList<>();
@@ -452,7 +486,6 @@ public final class DependencyAnalyzer
         {
             for (Element item : elements)
             {
-                env.mark(item);
                 String name = item.getName();
                 if (getString(R.string.arg_string).equals(name))
                 {
@@ -462,31 +495,32 @@ public final class DependencyAnalyzer
                         refOrVal.add(temp);
                     } else
                     {
-                        throw env.fromMessageThrow(
+                        throw fromMessageThrow(item,
                                 String.format("The name '%s' already exist", temp)
                         );
                     }
                 } else
                 {
-                    throw env.fromMessageThrow("Tag 'arg' no found");
+                    throw fromMessageThrow(item,
+                            "Tag 'arg' no found");
                 }
             }
         }
         Class<?>[] classes = new Class<?>[refOrVal.size()];
         for (int i = 0; i < classes.length; i++)
         {
-            classes[i] = env.getResultTypeIfNullThrow(refOrVal.get(i));
+            classes[i] = getResultTypeIfNullThrow(env, element, refOrVal.get(i));
         }
         Method factoryMethod = TypeUtil.getTypeFactory(factoryType,
                 factoryName,
                 classes);
         if (TypeUtil.isAssignToType(factoryMethod.getReturnType(), type))
         {
-            return ProviderImpl.createMethodFactory(factoryMethod,
+            return Provider.createMethodFactory(factoryMethod,
                     refOrVal);
         } else
         {
-            throw env.fromMessageThrow(
+            throw fromMessageThrow(element,
                     String.format("Return type no match (form %s to %s)",
                             factoryMethod.getReturnType(),
                             type));
@@ -494,48 +528,47 @@ public final class DependencyAnalyzer
     }
 
     @NonNull
-    private Provider.Factory analysisBuilder(@NonNull AnalyzerEnv env,
-                                             @NonNull Element element,
-                                             @NonNull Class<?> type)
+    private Factory analysisBuilder(@NonNull Context env,
+                                    @NonNull Element element,
+                                    @NonNull Class<?> type)
     {
-        env.mark(element);
-        Class<?> builderType = getTypeAttrIfErrorThrow(env, element);
+        Class<?> builderType = getTypeAttrIfErrorThrow(element);
         List<Element> elements = element.elements();
         Map<String, String> refOrVal = new ArrayMap<>();
         if (listNoEmpty(elements))
         {
             for (Element item : elements)
             {
-                env.mark(item);
                 String name = item.getName();
                 if (getString(R.string.arg_string).equals(name))
                 {
-                    String argName = env.getAttrIfEmptyThrow(item,
+                    String argName = getAttrIfEmptyThrow(item,
                             getString(R.string.name_string));
                     if (!refOrVal.containsKey(argName))
                     {
                         refOrVal.put(argName, getRefOrValAttr(env, item));
                     } else
                     {
-                        throw env.fromMessageThrow(
+                        throw fromMessageThrow(item,
                                 String.format("The name '%s' already exist", argName)
                         );
                     }
                 } else
                 {
-                    throw env.fromMessageThrow("Tag 'arg' no found");
+                    throw fromMessageThrow(item,
+                            "Tag 'arg' no found");
                 }
             }
         }
         Map<Method, String> setters = new ArrayMap<>();
-        String buildAction = env.getAttrNoThrow(element,
+        String buildAction = getAttrNoThrow(element,
                 getString(R.string.action_string));
         Method buildMethod = TypeUtil.getTypeInstanceMethod(builderType,
                 buildAction == null ? "build" : buildAction,
                 null);
         if (!TypeUtil.isAssignToType(buildMethod.getReturnType(), type))
         {
-            throw env.fromMessageThrow(
+            throw fromMessageThrow(element,
                     String.format("Return type no match (form %s to %s)",
                             buildMethod.getReturnType(),
                             type));
@@ -545,39 +578,37 @@ public final class DependencyAnalyzer
             setters.put(TypeUtil.getTypeInstanceMethod(
                     builderType,
                     entry.getKey(),
-                    new Class<?>[]{env.getResultTypeIfNullThrow(entry.getValue())}),
+                    new Class<?>[]{getResultTypeIfNullThrow(env, element, entry.getValue())}),
                     entry.getValue());
         }
-        return ProviderImpl.createBuilderFactory(builderType,
+        return Provider.createBuilderFactory(builderType,
                 setters,
                 buildMethod);
     }
 
     @NonNull
-    private Provider.Setter analysisProperty(@NonNull AnalyzerEnv env,
-                                             @NonNull Element element,
-                                             @NonNull Class<?> path)
+    private Setter analysisProperty(@NonNull Context env,
+                                    @NonNull Element element,
+                                    @NonNull Class<?> path)
     {
-        env.mark(element);
-        String name = env.getAttrIfEmptyThrow(element,
+        String name = getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
         String refOrVal = getRefOrValAttr(env, element);
-        return ProviderImpl.createPropertySetter(
+        return Provider.createPropertySetter(
                 TypeUtil.getTypeProperty(
                         path,
                         name,
-                        env.getResultTypeIfNullThrow(refOrVal)),
+                        getResultTypeIfNullThrow(env, element, refOrVal)),
                 refOrVal);
     }
 
     @NonNull
-    private String getRefOrValAttr(@NonNull AnalyzerEnv env,
+    private String getRefOrValAttr(@NonNull Context env,
                                    @NonNull Element element)
     {
-        env.mark(element);
-        String ref = env.getAttrNoThrow(element,
+        String ref = getAttrNoThrow(element,
                 getString(R.string.ref_string));
-        String val = env.getAttrNoThrow(element,
+        String val = getAttrNoThrow(element,
                 getString(R.string.val_string));
         if (ref != null)
         {
@@ -591,44 +622,43 @@ public final class DependencyAnalyzer
             Provider provider = env.getProvider(val);
             if (provider == null)
             {
-                provider = ProviderImpl.createProvider(
+                provider = Provider.createProvider(
                         DependencyType.SINGLETON,
-                        ProviderImpl.createSingletonFactory(
+                        Provider.createSingletonFactory(
                                 getVal(val)),
-                        Collections.<Provider.Setter>emptyList());
+                        Collections.<Setter>emptyList());
                 env.addProvider(val, provider);
             }
             return val;
         }
-        throw env.fromMessageThrow(String.format(
-                "Illegal %s = %s",
-                !TextUtils.isEmpty(ref) ? "ref" : "val",
-                !TextUtils.isEmpty(ref) ? ref : val));
+        throw fromMessageThrow(element,
+                String.format("Illegal %s = %s",
+                        !TextUtils.isEmpty(ref) ? "ref" : "val",
+                        !TextUtils.isEmpty(ref) ? ref : val));
     }
 
     @NonNull
-    private Provider analysisAssignValToVar(@NonNull AnalyzerEnv env,
+    private Provider analysisAssignValToVar(@NonNull Context env,
                                             @NonNull Element element)
     {
-        env.mark(element);
-        String val = env.getAttrIfEmptyThrow(element,
+        String val = getAttrIfEmptyThrow(element,
                 getString(R.string.val_string));
         if (TextType.CONSTANT.equals(TextUtil.getTextType(val)))
         {
             Provider provider = env.getProvider(val);
             if (provider == null)
             {
-                provider = ProviderImpl.createProvider(
+                provider = Provider.createProvider(
                         DependencyType.SINGLETON,
-                        ProviderImpl.createSingletonFactory(
+                        Provider.createSingletonFactory(
                                 getVal(val)),
-                        Collections.<Provider.Setter>emptyList());
+                        Collections.<Setter>emptyList());
                 env.addProvider(val, provider);
             }
             return provider;
         } else
         {
-            throw env.fromMessageThrow(String.format("Incorrect name '%s'", val));
+            throw fromMessageThrow(element, String.format("Incorrect name '%s'", val));
         }
     }
 
@@ -654,19 +684,85 @@ public final class DependencyAnalyzer
     }
 
     @NonNull
-    private Class<?> getTypeAttrIfErrorThrow(@NonNull AnalyzerEnv env,
-                                             @NonNull Element element)
+    private Class<?> getTypeAttrIfErrorThrow(@NonNull Element element)
     {
         try
         {
-            env.mark(element);
-            return Class.forName(env.getAttrIfEmptyThrow(
+            return Class.forName(getAttrIfEmptyThrow(
                     element,
                     getString(R.string.type_string)
             ));
         } catch (ClassNotFoundException e)
         {
-            throw env.formExceptionThrow(e);
+            throw formExceptionThrow(element, e);
         }
+    }
+
+    @Nullable
+    private static String getAttrNoThrow(
+            @NonNull Element element,
+            @NonNull String attr)
+    {
+        if (element.attributeCount() != 0)
+        {
+            Attribute attribute = element.attribute(attr);
+            if (attribute != null)
+            {
+                return attribute.getValue();
+            }
+        }
+        return null;
+    }
+
+    @NonNull
+    private static Class<?>
+    getResultTypeIfNullThrow(@NonNull Context env,
+                             @NonNull Element element,
+                             @NonNull String name)
+    {
+        Provider provider = env.getProvider(name);
+        if (provider != null)
+        {
+            return provider.getResultType();
+        } else
+        {
+            throw fromMessageThrow(element, String.format("no found name by %s provider", name));
+        }
+    }
+
+    @NonNull
+    private static String
+    getAttrIfEmptyThrow(@NonNull Element element,
+                        @NonNull String attr)
+    {
+        String name = getAttrNoThrow(element, attr);
+        if (!TextUtils.isEmpty(name))
+        {
+            return name;
+        }
+        throw fromMessageThrow(element,
+                String.format("Attr %s no found", attr));
+    }
+
+    @NonNull
+    private static RuntimeException
+    fromMessageThrow(@NonNull Element element,
+                     @NonNull String massage)
+    {
+        return new GenerateDependencyException(String.format(
+                "Error in %s ", element.asXML())
+                + (TextUtils.isEmpty(massage)
+                ? ""
+                : String.format(", message = %s", massage)));
+    }
+
+    @NonNull
+    private static RuntimeException
+    formExceptionThrow(@NonNull Element element,
+                       @NonNull Throwable e)
+    {
+        return new GenerateDependencyException(
+                String.format("Error in %s\n ",
+                        element.asXML()), e);
     }
 }

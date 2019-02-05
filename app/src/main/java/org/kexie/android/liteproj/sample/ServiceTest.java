@@ -1,5 +1,9 @@
 package org.kexie.android.liteproj.sample;
 
+import android.content.Intent;
+import android.os.IBinder;
+import android.support.annotation.Nullable;
+
 import com.orhanobut.logger.Logger;
 
 import org.kexie.android.liteproj.LiteService;
@@ -17,5 +21,12 @@ public class ServiceTest extends LiteService
     {
         super.onCreate();
         Logger.d("Service " + test);
+    }
+
+    @Nullable
+    @Override
+    public IBinder onBind(Intent intent)
+    {
+        return null;
     }
 }
