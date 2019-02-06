@@ -35,7 +35,6 @@ import java.util.Map;
 public final class DependencyAnalyzer
         extends ContextWrapper
 {
-
     private static final class Context
     {
         private final Provider mProxyProvider;
@@ -58,15 +57,15 @@ public final class DependencyAnalyzer
             if (Name.Type.CONSTANT.equals(name.type))
             {
                 return Provider.markConstant(name);
-            } else if (DependencyManager.OWNER.equals(name.value))
+            } else if (DependencyManager.OWNER.equals(name.text))
             {
                 return mProxyProvider;
-            } else if (DependencyManager.NULL.equals(name.value))
+            } else if (DependencyManager.NULL.equals(name.text))
             {
                 return Provider.sNullProxyProvider;
             } else
             {
-                return mProviders.get(name.value);
+                return mProviders.get(name.text);
             }
         }
 
@@ -75,11 +74,11 @@ public final class DependencyAnalyzer
             if (Name.Type.CONSTANT.equals(name.type))
             {
                 Provider.markConstant(name);
-            } else if (!DependencyManager.NULL.equals(name.value)
-                    && !DependencyManager.OWNER.equals(name.value)
-                    && !mProviders.containsKey(name.value))
+            } else if (!DependencyManager.NULL.equals(name.text)
+                    && !DependencyManager.OWNER.equals(name.text)
+                    && !mProviders.containsKey(name.text))
             {
-                mProviders.put(name.value, provider);
+                mProviders.put(name.text, provider);
             } else
             {
                 throw new GenerateDependencyException(
@@ -222,7 +221,7 @@ public final class DependencyAnalyzer
                         getString(R.string.name_string)));
                 if (!Name.Type.REFERENCE.equals(name.type))
                 {
-                    throw fromMessageThrow(element, String.format("Illegal name %s", name.value));
+                    throw fromMessageThrow(element, String.format("Illegal name %s", name.text));
                 }
                 env.addProvider(name, analysisVar(env, element));
             } else
@@ -544,7 +543,7 @@ public final class DependencyAnalyzer
             if (env.getProvider(name) == null)
             {
                 throw fromMessageThrow(element,
-                        String.format("%s not found", name.value));
+                        String.format("%s not found", name.text));
             }
             return name;
         }

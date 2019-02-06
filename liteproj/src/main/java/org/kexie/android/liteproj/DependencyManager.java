@@ -29,7 +29,7 @@ public final class DependencyManager
     @SuppressWarnings("WeakerAccess")
     public static final String NULL = "null";
     //静态表用来保存和对象关联的依赖管理器
-    final static Map<Object, DependencyManager> sTable = new WeakHashMap<>();
+    final static Map<Object, DependencyManager> sHolderTable = new WeakHashMap<>();
     //持有者的类型
     private Class<?> mOwnerType;
     //使用弱引用保存持有者，防止内存泄漏
@@ -44,7 +44,7 @@ public final class DependencyManager
     @SuppressWarnings("WeakerAccess")
     public static DependencyManager form(Object owner)
     {
-        return sTable.get(owner);
+        return sHolderTable.get(owner);
     }
 
     @NonNull
@@ -103,7 +103,7 @@ public final class DependencyManager
         }
         if (filter.size() != 0)
         {
-            DependencyManager manager = sTable.get(owner);
+            DependencyManager manager = sHolderTable.get(owner);
             if (manager != null)
             {
                 for (Dependency dependency : dependencies)
@@ -113,7 +113,7 @@ public final class DependencyManager
             } else
             {
                 manager = new DependencyManager(owner, filter);
-                sTable.put(owner, manager);
+                sHolderTable.put(owner, manager);
             }
             for (Dependency dependency : filter)
             {

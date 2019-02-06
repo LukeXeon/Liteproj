@@ -21,6 +21,7 @@ public final class TypeUtil
         Object castTo(@NonNull Object obj);
     }
 
+    //非线程安全,不过之读不写
     private static final Map<Pair<Class<?>, Class<?>>, TypeConverter>
             sTypeConverters = getTypeConverters();
 
@@ -293,7 +294,8 @@ public final class TypeUtil
                 return obj;
             }
         };
-        Map<Pair<Class<?>, Class<?>>, TypeConverter> result = new ArrayMap<>();
+        Map<Pair<Class<?>, Class<?>>, TypeConverter> result
+                = new ArrayMap<>();
         result.put(Pair.<Class<?>, Class<?>>
                 create(Boolean.class, Boolean.TYPE), castToThis);
         result.put(Pair.<Class<?>, Class<?>>

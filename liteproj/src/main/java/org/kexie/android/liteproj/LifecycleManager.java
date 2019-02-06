@@ -231,7 +231,7 @@ final class LifecycleManager
 
     static void attachTo(@NonNull Object owner)
     {
-        if (!DependencyManager.sTable.containsKey(owner))
+        if (!DependencyManager.sHolderTable.containsKey(owner))
         {
             if (owner instanceof FragmentActivity)
             {
@@ -305,7 +305,7 @@ final class LifecycleManager
                 check(owner.getClass(), dependencies);
                 manager = new DependencyManager(owner, dependencies);
             }
-            DependencyManager.sTable.put(owner, manager);
+            DependencyManager.sHolderTable.put(owner, manager);
             if (manager != null)
             {
                 inject(owner, manager);
@@ -315,7 +315,7 @@ final class LifecycleManager
 
     static void detachFrom(@NonNull Object owner)
     {
-        DependencyManager manager = DependencyManager.sTable.remove(owner);
+        DependencyManager manager = DependencyManager.sHolderTable.remove(owner);
         if (manager != null)
         {
             manager.onDestroy();

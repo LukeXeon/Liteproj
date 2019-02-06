@@ -31,23 +31,24 @@ public final class Name
 
     public final Type type;
 
-    public final String value;
+    public final String text;
 
     @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
-    public Name(String value)
+    public Name(String text)
     {
-        this.value = value == null ? "" : value;
-        this.type = getTextType(this.value);
+        this.text = text == null ? "" : text;
+        this.type = getTextType(this.text);
     }
 
     @Override
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public String toString()
     {
-        return String.format("name = %s , type = %s", value, type);
+        return String.format("name = %s , type = %s", text, type);
     }
 
     @NonNull
-    static Object valueOfName(@NonNull String val)
+    static Object toValue(@NonNull String val)
     {
         String value = val.substring(1, val.length());
         if (val.charAt(0) == '@')
@@ -102,7 +103,7 @@ public final class Name
         if (obj instanceof Name)
         {
             return ((Name) obj).type.equals(type)
-                    && ((Name) obj).value.equals(value);
+                    && ((Name) obj).text.equals(text);
         }
         return false;
     }

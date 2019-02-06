@@ -19,7 +19,7 @@ import java.util.WeakHashMap;
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public abstract class Provider
 {
-    private final static WeakHashMap<String, Provider> sConstantCache
+    private final static Map<String, Provider> sConstantCache
             = new WeakHashMap<>();
 
     static final Provider sNullProxyProvider = new Provider()
@@ -114,41 +114,49 @@ public abstract class Provider
         };
     }
 
+    @NonNull
     static Provider markConstant(@NonNull Name name)
     {
         switch (name.type)
         {
             case CONSTANT:
             {
-                Provider provider = sConstantCache.get(name.value);
+                Provider provider = sConstantCache.get(name.text);
                 if (provider == null)
                 {
-                    final Object object = Name.valueOfName(name.value);
-                    provider = new Provider()
+                    synchronized (sConstantCache)
                     {
-                        @NonNull
-                        @SuppressWarnings({"unchecked"})
-                        @Override
-                        public <T> T provide(@NonNull DependencyManager dependency)
+                        provider = sConstantCache.get(name.text);
+                        if (provider == null)
                         {
-                            return (T) object;
-                        }
+                            final Object object = Name.toValue(name.text);
+                            provider = new Provider()
+                            {
+                                @NonNull
+                                @SuppressWarnings({"unchecked"})
+                                @Override
+                                public <T> T provide(@NonNull DependencyManager dependency)
+                                {
+                                    return (T) object;
+                                }
 
-                        @NonNull
-                        @Override
-                        public DependencyType getType()
-                        {
-                            return DependencyType.SINGLETON;
-                        }
+                                @NonNull
+                                @Override
+                                public DependencyType getType()
+                                {
+                                    return DependencyType.SINGLETON;
+                                }
 
-                        @NonNull
-                        @Override
-                        public Class<?> getResultType()
-                        {
-                            return object.getClass();
+                                @NonNull
+                                @Override
+                                public Class<?> getResultType()
+                                {
+                                    return object.getClass();
+                                }
+                            };
+                            sConstantCache.put(name.text, provider);
                         }
-                    };
-                    sConstantCache.put(name.value, provider);
+                    }
                 }
                 return provider;
             }
@@ -348,17 +356,12 @@ public abstract class Provider
         {
             case CONSTANT:
             {
-                Provider provider = sConstantCache.get(name.value);
-                if (provider == null)
-                {
-                    provider = markConstant(name);
-                }
-                return provider.provide(dependency);
+                return markConstant(name).provide(dependency);
             }
             case REFERENCE:
             {
-                return Objects.requireNonNull(dependency.get(name.value),
-                        "Can't provide a null value");
+                return Objects.requireNonNull(dependency.get(name.text),
+                        "Can't provide a null text");
             }
             default:
             {
