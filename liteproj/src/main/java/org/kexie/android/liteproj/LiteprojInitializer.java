@@ -24,11 +24,11 @@ public final class LiteprojInitializer
     {
         Context context = getContext();
         assert context != null;
+        DependencyInjector.init(context);
         LifecycleManager.init(context);
         Log.d(TAG, "Liteproj init");
         return true;
     }
-
 
     @Nullable
     @Override

@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity
 {
     private static final String TAG = "MainActivity";
 
-    @Reference("url3")
+    @Reference
     String url3;
 
     @Reference("url2")
