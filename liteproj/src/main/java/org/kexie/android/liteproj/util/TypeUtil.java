@@ -22,7 +22,7 @@ public final class TypeUtil
     }
 
     private static final Map<Pair<Class<?>, Class<?>>, TypeConverter>
-            sTypeConverters = newTypeConverters();
+            sTypeConverters = getTypeConverters();
 
     private static final Filter<Method> sPropertyFilter = new Filter<Method>()
     {
@@ -282,7 +282,7 @@ public final class TypeUtil
 
     @NonNull
     private static Map<Pair<Class<?>, Class<?>>, TypeConverter>
-    newTypeConverters()
+    getTypeConverters()
     {
         TypeConverter castToThis = new TypeConverter()
         {

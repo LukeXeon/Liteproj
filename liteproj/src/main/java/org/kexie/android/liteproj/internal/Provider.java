@@ -14,10 +14,14 @@ import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.WeakHashMap;
 
 @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
 public abstract class Provider
 {
+    private final static WeakHashMap<String, Provider> sConstantCache
+            = new WeakHashMap<>();
+
     static final Provider sNullProxyProvider = new Provider()
     {
         @NonNull
@@ -110,49 +114,68 @@ public abstract class Provider
         };
     }
 
-    static Provider createConstantProvider(Object object)
+    static Provider markConstant(@NonNull Name name)
     {
-        final Object nonNull = Objects.requireNonNull(object);
-        return new Provider()
+        switch (name.type)
         {
-            @NonNull
-            @SuppressWarnings({"unchecked"})
-            @Override
-            public <T> T provide(@NonNull DependencyManager dependencyManager)
+            case CONSTANT:
             {
-                return (T) nonNull;
-            }
+                Provider provider = sConstantCache.get(name.value);
+                if (provider == null)
+                {
+                    final Object object = Name.valueOfName(name.value);
+                    provider = new Provider()
+                    {
+                        @NonNull
+                        @SuppressWarnings({"unchecked"})
+                        @Override
+                        public <T> T provide(@NonNull DependencyManager dependency)
+                        {
+                            return (T) object;
+                        }
 
-            @NonNull
-            @Override
-            public DependencyType getType()
-            {
-                return DependencyType.SINGLETON;
-            }
+                        @NonNull
+                        @Override
+                        public DependencyType getType()
+                        {
+                            return DependencyType.SINGLETON;
+                        }
 
-            @NonNull
-            @Override
-            public Class<?> getResultType()
-            {
-                return nonNull.getClass();
+                        @NonNull
+                        @Override
+                        public Class<?> getResultType()
+                        {
+                            return object.getClass();
+                        }
+                    };
+                    sConstantCache.put(name.value, provider);
+                }
+                return provider;
             }
-        };
+            default:
+            {
+                throw new IllegalStateException(String.format("Illegal name %s for get constant", name));
+            }
+        }
     }
 
     @NonNull
     static Setter createPropertySetter(@NonNull final Method method,
-                                       @NonNull final String name)
+                                       @NonNull final Name name)
     {
         return new Setter()
         {
             @Override
-            public void set(@NonNull Object target, @NonNull DependencyManager dependency)
+            public void set(@NonNull Object target,
+                            @NonNull DependencyManager dependency)
             {
                 try
                 {
                     method.setAccessible(true);
-                    method.invoke(target, TypeUtil.castToType(dependency.get(name),
-                            method.getParameterTypes()[0]));
+                    method.invoke(target,
+                            TypeUtil.castToType(
+                                    getValueByName(dependency, name),
+                                    method.getParameterTypes()[0]));
                 } catch (Exception e)
                 {
                     throw new RuntimeException(e);
@@ -163,7 +186,7 @@ public abstract class Provider
 
     @NonNull
     static Setter createFieldSetter(@NonNull final Field field,
-                                    @NonNull final String name)
+                                    @NonNull final Name name)
     {
         return new Setter()
         {
@@ -173,8 +196,10 @@ public abstract class Provider
                 field.setAccessible(true);
                 try
                 {
-                    field.set(target, TypeUtil.castToType(dependency.get(name),
-                            field.getType()));
+                    field.set(target,
+                            TypeUtil.castToType(
+                                    getValueByName(dependency, name),
+                                    field.getType()));
                 } catch (IllegalAccessException e)
                 {
                     throw new RuntimeException(e);
@@ -185,7 +210,7 @@ public abstract class Provider
 
     @NonNull
     static Factory createMethodFactory(@NonNull final Method method,
-                                       @NonNull final List<String> references)
+                                       @NonNull final List<Name> references)
     {
         return new Factory()
         {
@@ -221,7 +246,7 @@ public abstract class Provider
 
     @NonNull
     static Factory createBuilderFactory(@NonNull final Class<?> builderType,
-                                        @NonNull final Map<Method, String> references,
+                                        @NonNull final Map<Method, Name> references,
                                         @NonNull final Method build)
     {
         return new Factory()
@@ -229,17 +254,17 @@ public abstract class Provider
             @NonNull
             @SuppressWarnings("unchecked")
             @Override
-            public <T> T newInstance(@NonNull DependencyManager dependencyManager)
+            public <T> T newInstance(@NonNull DependencyManager dependency)
             {
                 try
                 {
                     Object builder = builderType.newInstance();
-                    for (Map.Entry<Method, String> entry
+                    for (Map.Entry<Method, Name> entry
                             : references.entrySet())
                     {
                         Method setter = entry.getKey();
                         setter.invoke(builder, TypeUtil.castToType(
-                                dependencyManager.get(entry.getValue()),
+                                getValueByName(dependency, entry.getValue()),
                                 setter.getParameterTypes()[0]));
                     }
                     return (T) build.invoke(builder);
@@ -262,7 +287,7 @@ public abstract class Provider
 
     @NonNull
     static Factory createConstructorFactory(@NonNull final Constructor<?> constructor,
-                                            @NonNull final List<String> references)
+                                            @NonNull final List<Name> references)
     {
         return new Factory()
         {
@@ -300,17 +325,46 @@ public abstract class Provider
     }
 
     @NonNull
-    private static Object[] getReferences(@NonNull List<String> refs,
+    private static Object[] getReferences(@NonNull List<Name> refs,
                                           @NonNull Class<?>[] targetClasses,
                                           @NonNull DependencyManager dependency)
     {
         Object[] args = new Object[refs.size()];
         for (int i = 0; i < refs.size(); i++)
         {
-            String name = refs.get(i);
-            args[i] = TypeUtil.castToType(dependency.get(name), targetClasses[i]);
+            args[i] = TypeUtil.castToType(
+                    getValueByName(dependency,
+                            refs.get(i)),
+                    targetClasses[i]);
         }
         return args;
+    }
+
+    @NonNull
+    private static Object getValueByName(@NonNull DependencyManager dependency,
+                                         @NonNull Name name)
+    {
+        switch (name.type)
+        {
+            case CONSTANT:
+            {
+                Provider provider = sConstantCache.get(name.value);
+                if (provider == null)
+                {
+                    provider = markConstant(name);
+                }
+                return provider.provide(dependency);
+            }
+            case REFERENCE:
+            {
+                return Objects.requireNonNull(dependency.get(name.value),
+                        "Can't provide a null value");
+            }
+            default:
+            {
+                throw new AssertionError();
+            }
+        }
     }
 
     @NonNull

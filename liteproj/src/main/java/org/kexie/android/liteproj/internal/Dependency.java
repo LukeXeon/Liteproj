@@ -5,9 +5,6 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 import android.support.v4.util.ArraySet;
 
-import org.kexie.android.liteproj.util.TextType;
-import org.kexie.android.liteproj.util.TextUtil;
-
 import java.util.Map;
 import java.util.Set;
 
@@ -16,27 +13,19 @@ import java.util.Set;
 public final class Dependency
 {
     private final Class<?> mOwnerType;
-    private final Map<String, Provider> mProviders;
+    private final Map<String, Provider> mReferences;
 
     Dependency(@NonNull Class<?> ownerType,
-               @NonNull Map<String, Provider> providers)
+               @NonNull Map<String, Provider> references)
     {
         this.mOwnerType = ownerType;
-        this.mProviders = providers;
+        this.mReferences = references;
     }
 
     @NonNull
     public Set<String> getReferences()
     {
-        Set<String> result = new ArraySet<>();
-        for (String key : mProviders.keySet())
-        {
-            if (!TextType.CONSTANT.equals(TextUtil.getTextType(key)))
-            {
-                result.add(key);
-            }
-        }
-        return result;
+        return new ArraySet<>(mReferences.keySet());
     }
 
     @NonNull
@@ -48,6 +37,6 @@ public final class Dependency
     @Nullable
     public Provider getProvider(String name)
     {
-        return mProviders.get(name);
+        return mReferences.get(name);
     }
 }

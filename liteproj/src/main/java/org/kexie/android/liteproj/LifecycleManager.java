@@ -13,8 +13,7 @@ import android.util.Log;
 
 import org.kexie.android.liteproj.internal.DependencyAnalyzer;
 import org.kexie.android.liteproj.internal.Dependency;
-import org.kexie.android.liteproj.util.TextType;
-import org.kexie.android.liteproj.util.TextUtil;
+import org.kexie.android.liteproj.internal.Name;
 import org.kexie.android.liteproj.util.TypeUtil;
 
 import java.lang.reflect.Field;
@@ -104,7 +103,7 @@ final class LifecycleManager
                 Reference reference = field.getAnnotation(Reference.class);
                 if (reference != null)
                 {
-                    if (!TextType.REFERENCE.equals(TextUtil.getTextType(reference.value())))
+                    if (!Name.Type.REFERENCE.equals(new Name(reference.value()).type))
                     {
                         throw new IllegalStateException(
                                 String.format("The name '%s' illegal", reference.value()));
@@ -134,7 +133,7 @@ final class LifecycleManager
                 Reference reference = property.getAnnotation(Reference.class);
                 if (reference != null)
                 {
-                    if (!TextType.REFERENCE.equals(TextUtil.getTextType(reference.value())))
+                    if (!Name.Type.REFERENCE.equals(new Name(reference.value()).type))
                     {
                         throw new IllegalStateException(
                                 String.format("The name '%s' illegal", reference.value()));

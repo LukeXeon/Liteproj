@@ -21,13 +21,10 @@ import org.kexie.android.liteproj.DependencyManager;
 import org.kexie.android.liteproj.DependencyType;
 import org.kexie.android.liteproj.GenerateDependencyException;
 import org.kexie.android.liteproj.R;
-import org.kexie.android.liteproj.util.TextType;
-import org.kexie.android.liteproj.util.TextUtil;
 import org.kexie.android.liteproj.util.TypeUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -38,12 +35,6 @@ import java.util.Map;
 public final class DependencyAnalyzer
         extends ContextWrapper
 {
-
-    private interface TextConverter
-    {
-        @NonNull
-        Object valueOf(@NonNull String value);
-    }
 
     private static final class Context
     {
@@ -62,26 +53,33 @@ public final class DependencyAnalyzer
         }
 
         @Nullable
-        private Provider getProvider(@NonNull String name)
+        private Provider getProvider(@NonNull Name name)
         {
-            if (DependencyManager.OWNER.equals(name))
+            if (Name.Type.CONSTANT.equals(name.type))
+            {
+                return Provider.markConstant(name);
+            } else if (DependencyManager.OWNER.equals(name.value))
             {
                 return mProxyProvider;
-            }
-            if (DependencyManager.NULL.equals(name))
+            } else if (DependencyManager.NULL.equals(name.value))
             {
                 return Provider.sNullProxyProvider;
+            } else
+            {
+                return mProviders.get(name.value);
             }
-            return mProviders.get(name);
         }
 
-        void addProvider(@NonNull String name, @NonNull Provider provider)
+        private void addProvider(@NonNull Name name, @NonNull Provider provider)
         {
-            if (!DependencyManager.NULL.equals(name)
-                    && !DependencyManager.OWNER.equals(name)
-                    && !mProviders.containsKey(name))
+            if (Name.Type.CONSTANT.equals(name.type))
             {
-                mProviders.put(name, provider);
+                Provider.markConstant(name);
+            } else if (!DependencyManager.NULL.equals(name.value)
+                    && !DependencyManager.OWNER.equals(name.value)
+                    && !mProviders.containsKey(name.value))
+            {
+                mProviders.put(name.value, provider);
             } else
             {
                 throw new GenerateDependencyException(
@@ -93,10 +91,7 @@ public final class DependencyAnalyzer
 
     private static final String TAG = "DependencyAnalyzer";
 
-    private static final List<TextConverter>
-            sTextConverters = newTextConverters();
-
-    //线程安全
+    //线程安全LruCache
     private final LruCache<Object, Dependency> mResultCache;
 
     @NonNull
@@ -129,91 +124,6 @@ public final class DependencyAnalyzer
         return list != null && list.size() != 0;
     }
 
-    @NonNull
-    private static List<TextConverter> newTextConverters()
-    {
-        List<TextConverter> result = new LinkedList<>();
-        result.add(new TextConverter()
-        {
-            @NonNull
-            @Override
-            public Object valueOf(@NonNull String value)
-            {
-                if (!Character.isDigit(value.charAt(0)))
-                {
-                    if (value.length() == 1)
-                    {
-                        return value.charAt(0);
-                    } else if ("true".equals(value) || "false".equals(value))
-                    {
-                        return Boolean.valueOf(value);
-                    }
-                }
-                throw new NumberFormatException();
-            }
-        });
-        for (final Class<?> type : new Class<?>[]{Byte.class,
-                Short.class,
-                Integer.class,
-                Long.class,
-                Float.class,
-                Double.class})
-        {
-            result.add(new TextConverter()
-            {
-                @NonNull
-                @Override
-                public Object valueOf(@NonNull String value)
-                {
-                    try
-                    {
-                        return type.getMethod("valueOf", String.class)
-                                .invoke(null, value);
-                    } catch (IllegalAccessException
-                            | NoSuchMethodException e)
-                    {
-                        throw new AssertionError(e);
-                    } catch (InvocationTargetException e)
-                    {
-                        if (e.getCause() instanceof NumberFormatException)
-                        {
-                            throw (NumberFormatException) e.getCause();
-                        } else
-                        {
-                            throw new AssertionError(e);
-                        }
-                    }
-                }
-            });
-        }
-        return result;
-    }
-
-    @NonNull
-    private static Object getVal(@NonNull String val)
-    {
-        String value = val.substring(1, val.length());
-        if (val.charAt(0) == '@')
-        {
-            return value;
-        } else
-        {
-            for (TextConverter valueOf : sTextConverters)
-            {
-                try
-                {
-                    return valueOf.valueOf(val);
-                } catch (NumberFormatException ignored)
-                {
-                }
-            }
-            throw new NumberFormatException(
-                    String.format(
-                            "The name %s does not match the rule of val"
-                            , val));
-        }
-    }
-
     private int initCacheSize()
     {
         try
@@ -244,6 +154,7 @@ public final class DependencyAnalyzer
     }
 
     @NonNull
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public Dependency analysis(@RawRes int xml)
     {
         Dependency dependency = mResultCache.get(xml);
@@ -277,6 +188,7 @@ public final class DependencyAnalyzer
     }
 
     @NonNull
+    @RestrictTo(RestrictTo.Scope.LIBRARY_GROUP)
     public Dependency analysis(@NonNull String asset)
     {
         Dependency dependency = mResultCache.get(asset);
@@ -306,9 +218,13 @@ public final class DependencyAnalyzer
         {
             if (getString(R.string.var_string).equals(element.getName()))
             {
-                env.addProvider(getAttrIfEmptyThrow(element,
-                        getString(R.string.name_string)),
-                        analysisVar(env, element));
+                Name name = new Name(getAttrIfEmptyThrow(element,
+                        getString(R.string.name_string)));
+                if (!Name.Type.REFERENCE.equals(name.type))
+                {
+                    throw fromMessageThrow(element, String.format("Illegal name %s", name.value));
+                }
+                env.addProvider(name, analysisVar(env, element));
             } else
             {
                 throw fromMessageThrow(element, "Need a 'var' tag");
@@ -324,7 +240,7 @@ public final class DependencyAnalyzer
         String val = getAttrNoThrow(element, getString(R.string.val_string));
         if (val != null)
         {
-            return analysisAssignValToVar(env, element);
+            return analysisAssignValToVar(env, element, val);
         } else
         {
             return analysisProviderVar(env, element);
@@ -401,7 +317,7 @@ public final class DependencyAnalyzer
     {
         String name = getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
-        String refOrVal = getRefOrValAttr(env, element);
+        Name refOrVal = getRefOrValAttr(env, element);
         return Provider.createFieldSetter(
                 TypeUtil.getTypeField(path,
                         name, getResultTypeIfNullThrow(env, element, refOrVal)),
@@ -429,7 +345,7 @@ public final class DependencyAnalyzer
         }
         return Provider.createConstructorFactory(
                 TypeUtil.getTypeConstructor(type, null),
-                Collections.<String>emptyList());
+                Collections.<Name>emptyList());
     }
 
     @NonNull
@@ -438,7 +354,7 @@ public final class DependencyAnalyzer
                                 @NonNull Class<?> type)
     {
         List<Element> elements = element.elements();
-        List<String> refOrVal = new LinkedList<>();
+        List<Name> refOrVal = new LinkedList<>();
         if (listNoEmpty(elements))
         {
             for (Element item : elements)
@@ -446,14 +362,15 @@ public final class DependencyAnalyzer
                 String name = item.getName();
                 if (getString(R.string.arg_string).equals(name))
                 {
-                    String temp = getRefOrValAttr(env, item);
+                    Name temp = getRefOrValAttr(env, item);
                     if (!refOrVal.contains(temp))
                     {
                         refOrVal.add(temp);
                     } else
                     {
                         throw fromMessageThrow(item,
-                                String.format("The name '%s' already exist", temp)
+                                String.format("The name '%s' already exist",
+                                        temp)
                         );
                     }
                 } else
@@ -466,7 +383,10 @@ public final class DependencyAnalyzer
         Class<?>[] classes = new Class<?>[refOrVal.size()];
         for (int i = 0; i < classes.length; i++)
         {
-            classes[i] = getResultTypeIfNullThrow(env, element, refOrVal.get(i));
+            classes[i] = getResultTypeIfNullThrow(
+                    env,
+                    element,
+                    refOrVal.get(i));
         }
         return Provider.createConstructorFactory(
                 TypeUtil.getTypeConstructor(type,
@@ -482,7 +402,7 @@ public final class DependencyAnalyzer
         String factoryName = getAttrIfEmptyThrow(element,
                 getString(R.string.action_string));
         List<Element> elements = element.elements();
-        List<String> refOrVal = new LinkedList<>();
+        List<Name> refOrVal = new LinkedList<>();
         if (listNoEmpty(elements))
         {
             for (Element item : elements)
@@ -490,14 +410,15 @@ public final class DependencyAnalyzer
                 String name = item.getName();
                 if (getString(R.string.arg_string).equals(name))
                 {
-                    String temp = getRefOrValAttr(env, item);
+                    Name temp = getRefOrValAttr(env, item);
                     if (!refOrVal.contains(temp))
                     {
                         refOrVal.add(temp);
                     } else
                     {
                         throw fromMessageThrow(item,
-                                String.format("The name '%s' already exist", temp)
+                                String.format("The name '%s' already exist",
+                                        temp)
                         );
                     }
                 } else
@@ -510,7 +431,9 @@ public final class DependencyAnalyzer
         Class<?>[] classes = new Class<?>[refOrVal.size()];
         for (int i = 0; i < classes.length; i++)
         {
-            classes[i] = getResultTypeIfNullThrow(env, element, refOrVal.get(i));
+            classes[i] = getResultTypeIfNullThrow(env,
+                    element,
+                    refOrVal.get(i));
         }
         Method factoryMethod = TypeUtil.getTypeFactory(factoryType,
                 factoryName,
@@ -535,7 +458,7 @@ public final class DependencyAnalyzer
     {
         Class<?> builderType = getTypeAttrIfErrorThrow(element);
         List<Element> elements = element.elements();
-        Map<String, String> refOrVal = new ArrayMap<>();
+        Map<String, Name> refOrVal = new ArrayMap<>();
         if (listNoEmpty(elements))
         {
             for (Element item : elements)
@@ -551,7 +474,8 @@ public final class DependencyAnalyzer
                     } else
                     {
                         throw fromMessageThrow(item,
-                                String.format("The name '%s' already exist", argName)
+                                String.format("The name '%s' already exist",
+                                        argName)
                         );
                     }
                 } else
@@ -561,7 +485,7 @@ public final class DependencyAnalyzer
                 }
             }
         }
-        Map<Method, String> setters = new ArrayMap<>();
+        Map<Method, Name> setters = new ArrayMap<>();
         String buildAction = getAttrNoThrow(element,
                 getString(R.string.action_string));
         Method buildMethod = TypeUtil.getTypeInstanceMethod(builderType,
@@ -574,12 +498,14 @@ public final class DependencyAnalyzer
                             buildMethod.getReturnType(),
                             type));
         }
-        for (Map.Entry<String, String> entry : refOrVal.entrySet())
+        for (Map.Entry<String, Name> entry : refOrVal.entrySet())
         {
             setters.put(TypeUtil.getTypeInstanceMethod(
                     builderType,
                     entry.getKey(),
-                    new Class<?>[]{getResultTypeIfNullThrow(env, element, entry.getValue())}),
+                    new Class<?>[]{getResultTypeIfNullThrow(env,
+                            element,
+                            entry.getValue())}),
                     entry.getValue());
         }
         return Provider.createBuilderFactory(builderType,
@@ -594,7 +520,7 @@ public final class DependencyAnalyzer
     {
         String name = getAttrIfEmptyThrow(element,
                 getString(R.string.name_string));
-        String refOrVal = getRefOrValAttr(env, element);
+        Name refOrVal = getRefOrValAttr(env, element);
         return Provider.createPropertySetter(
                 TypeUtil.getTypeProperty(
                         path,
@@ -604,29 +530,23 @@ public final class DependencyAnalyzer
     }
 
     @NonNull
-    private String getRefOrValAttr(@NonNull Context env,
-                                   @NonNull Element element)
+    private Name getRefOrValAttr(Context env, @NonNull Element element)
     {
         String ref = getAttrNoThrow(element,
                 getString(R.string.ref_string));
         String val = getAttrNoThrow(element,
                 getString(R.string.val_string));
-        if (ref != null)
+        Name name = ref != null ? new Name(ref)
+                : val != null ? new Name(val)
+                : new Name("");
+        if (!Name.Type.ILLEGAL.equals(name.type))
         {
-            if (TextType.REFERENCE.equals(
-                    TextUtil.getTextType(ref)))
+            if (env.getProvider(name) == null)
             {
-                return ref;
+                throw fromMessageThrow(element,
+                        String.format("%s not found", name.value));
             }
-        } else if (val != null)
-        {
-            Provider provider = env.getProvider(val);
-            if (provider == null)
-            {
-                provider = Provider.createConstantProvider(getVal(val));
-                env.addProvider(val, provider);
-            }
-            return val;
+            return name;
         }
         throw fromMessageThrow(element,
                 String.format("Illegal %s = %s",
@@ -636,22 +556,19 @@ public final class DependencyAnalyzer
 
     @NonNull
     private Provider analysisAssignValToVar(@NonNull Context env,
-                                            @NonNull Element element)
+                                            @NonNull Element element,
+                                            @NonNull String val)
     {
-        String val = getAttrIfEmptyThrow(element,
-                getString(R.string.val_string));
-        if (TextType.CONSTANT.equals(TextUtil.getTextType(val)))
+        Name name = new Name(val);
+        if (Name.Type.CONSTANT.equals(name.type))
         {
-            Provider constant = env.getProvider(val);
-            if (constant == null)
-            {
-                constant = Provider.createConstantProvider(getVal(val));
-                env.addProvider(val, constant);
-            }
-            return constant;
+            Provider provider = env.getProvider(name);
+            assert provider != null;
+            return provider;
         } else
         {
-            throw fromMessageThrow(element, String.format("Incorrect name '%s'", val));
+            throw fromMessageThrow(element,
+                    String.format("Incorrect name '%s'", val));
         }
     }
 
@@ -711,7 +628,7 @@ public final class DependencyAnalyzer
     private static Class<?>
     getResultTypeIfNullThrow(@NonNull Context env,
                              @NonNull Element element,
-                             @NonNull String name)
+                             @NonNull Name name)
     {
         Provider provider = env.getProvider(name);
         if (provider != null)
@@ -719,7 +636,8 @@ public final class DependencyAnalyzer
             return provider.getResultType();
         } else
         {
-            throw fromMessageThrow(element, String.format("no found name by %s provider", name));
+            throw fromMessageThrow(element,
+                    String.format("no found name by %s provider", name));
         }
     }
 
